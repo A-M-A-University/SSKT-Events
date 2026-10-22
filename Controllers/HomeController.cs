@@ -6,7 +6,7 @@ namespace SSKT_Events.Controllers;
 
 public class HomeController : Controller
 {
-    public IActionResult Indexs()
+    public IActionResult Index()
     {
         return View();
     }

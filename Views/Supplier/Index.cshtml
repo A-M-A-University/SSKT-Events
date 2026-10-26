@@ -1,0 +1,73 @@
+@using SSKT_Events.Models
+@model List<SupplierBooking>
+
+@{
+    ViewData["Title"] = "Supplier Dashboard";
+    var supplier = ViewBag.Supplier as Supplier;
+}
+
+<h2>Supplier Dashboard</h2>
+
+@if (supplier != null)
+{
+    <h4>@supplier.Name</h4>
+    <p>Email: @supplier.Email</p>
+    <p>Phone: @supplier.Phone</p>
+}
+
+<hr />
+
+<h3>My Bookings</h3>
+
+@if (TempData["Error"] != null)
+{
+    <p style="color: red;">@TempData["Error"]</p>
+}
+
+@if (Model == null || !Model.Any())
+{
+    <p>No bookings available.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Booking Date</th>
+                <th>Time</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var booking in Model)
+            {
+                <tr>
+                    <td>@booking.ServiceName</td>
+                    <td>@booking.BookingDate.ToString("MMM dd, yyyy")</td>
+                    <td>@booking.StartTime - @booking.EndTime</td>
+                    <td>₱@booking.Price.ToString("N2")</td>
+                    <td>@booking.Status</td>
+                    <td>
+                        @if (booking.Status == BookingStatus.Pending)
+                        {
+                            <form asp-action="Accept" method="post">
+                                <input type="hidden" name="bookingId" value="@booking.Id" />
+                                <input type="hidden" name="supplierId" value="@supplier?.Id" />
+                                <button type="submit" class="btn btn-success btn-sm">Accept</button>
+                            </form>
+
+                            <form asp-action="Decline" method="post">
+                                <input type="hidden" name="bookingId" value="@booking.Id" />
+                                <input type="hidden" name="supplierId" value="@supplier?.Id" />
+                                <button type="submit" class="btn btn-danger btn-sm">Decline</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

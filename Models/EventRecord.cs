@@ -2,33 +2,33 @@ namespace SSKT_Events.Models;
 
 public class EventRecord
 {
-    // Event Information
+    // Event info
     public int Id { get; set; }
     public int CustomerId { get; set; }
-    public string Name { get; set; } = "";
+    public string Name { get; set; }
     public EventType Type { get; set; } = EventType.Other;
     public DateTime EventDate { get; set; }
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }
-    public string Location { get; set; } = "";
+    public string Location { get; set; }
     public int ExpectedGuests { get; set; }
-    public string Description { get; set; } = "";
-    public string SpecialRequirements { get; set; } = "";
+    public string Description { get; set; }
+    public string SpecialRequirements { get; set; }
 
-    // Budget and Status
+    // Budget and its status
     public decimal TotalBudget { get; set; }
     public EventStatus Status { get; set; } = EventStatus.Draft;
 
-    // Cancellation Details
+    // Cancellation
     public string CancellationReason { get; set; } = "";
     public DateTime? CancelledAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-    // Bookings and Payments
+    // Bookings and payments
     public List<SupplierBooking> Bookings { get; set; } = new();
     public List<EventPayment> Payments { get; set; } = new();
 
-    // Budget Calculations
+    // Budget calc
     public decimal TotalBookedCost =>
         Bookings.Where(b => b.Status == BookingStatus.Accepted)
                 .Sum(b => b.Price);

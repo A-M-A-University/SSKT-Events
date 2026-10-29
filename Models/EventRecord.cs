@@ -1,10 +1,16 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SSKT_Events.Models;
 
 public class EventRecord
 {
     // Event info
+    [Key]
     public int Id { get; set; }
     public int CustomerId { get; set; }
+    [ForeignKey("CustomerId")]
+    public Customer? Customer { get; set; }
     public string Name { get; set; }
     public EventType Type { get; set; } = EventType.Other;
     public DateTime EventDate { get; set; }

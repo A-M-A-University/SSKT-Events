@@ -5,7 +5,6 @@ namespace SSKT_Events.Models;
 
 public class EventRecord
 {
-    // Event info
     [Key]
     public int Id { get; set; }
     public int CustomerId { get; set; }

@@ -1,87 +1,95 @@
-@model List<SSKT_Events.Models.EventRecord>
+@model IEnumerable<SSKT_Events.Models.EventRecord>
+
 @{
     ViewData["Title"] = "My Events";
 }
-@{
-    var all = SSKT_Events.Controllers.EventsController.events;
-}
 
-<div class="row g-3 mb-4 text-center">
-    <div class="col">
-        <div class="card"><div class="card-body">
-            <div class="fs-3 fw-bold">@all.Count</div>
-            <div class="text-muted">Total</div>
-        </div></div>
-    </div>
-    <div class="col">
-        <div class="card"><div class="card-body">
-            <div class="fs-3 fw-bold">@all.Count(e => e.Status == SSKT_Events.Models.EventStatus.Upcoming)</div>
-            <div class="text-muted">Upcoming</div>
-        </div></div>
-    </div>
-    <div class="col">
-        <div class="card"><div class="card-body">
-            <div class="fs-3 fw-bold">@all.Count(e => e.Status == SSKT_Events.Models.EventStatus.Ongoing)</div>
-            <div class="text-muted">Ongoing</div>
-        </div></div>
-    </div>
-    <div class="col">
-        <div class="card"><div class="card-body">
-            <div class="fs-3 fw-bold">@all.Count(e => e.Status == SSKT_Events.Models.EventStatus.Completed)</div>
-            <div class="text-muted">Completed</div>
-        </div></div>
-    </div>
-    <div class="col">
-        <div class="card"><div class="card-body">
-            <div class="fs-3 fw-bold">@all.Count(e => e.Status == SSKT_Events.Models.EventStatus.Cancelled)</div>
-            <div class="text-muted">Cancelled</div>
-        </div></div>
-    </div>
-</div>
+<h1>My Events</h1>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">My Events</h1>
-    <a asp-action="Create" class="btn btn-primary">+ Create New Event</a>
-</div>
+<p>
+    <a asp-action="Create">Create New Event</a>
+</p>
 
-<form method="get" class="mb-4">
-    <input type="text" name="search" placeholder="Search events" />
-    <button type="submit">Search</button>
-</form>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Type)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.EventDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Location)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ExpectedGuests)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TotalBudget)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Status)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
 
-@if (!Model.Any())
-{
-    <div class="alert alert-info">You have no events yet.</div>
-}
-else
-{
-    <table class="table table-hover align-middle">
-        <thead>
+    <tbody id="eventRows">
+        @foreach (var item in Model)
+        {
             <tr>
-                <th>Event</th>
-                <th>Type</th>
-                <th>Date</th>
-                <th>Location</th>
-                <th class="text-end">Budget</th>
-                <th>Status</th>
-                <th></th>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Type)
+                </td>
+                <td>
+                    @item.EventDate.ToString("MMM dd, yyyy")
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Location)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ExpectedGuests)
+                </td>
+                <td>
+                    ₱@item.TotalBudget.ToString("N2")
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Status)
+                </td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a>
+                    |
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach (var e in Model)
-            {
-                <tr>
-                    <td class="fw-semibold">@e.Name</td>
-                    <td>@e.Type</td>
-                    <td>@e.EventDate.ToString("MMM dd, yyyy")</td>
-                    <td>@e.Location</td>
-                    <td class="text-end">₱@e.TotalBudget.ToString("N2")</td>
-                    <td>@e.Status</td>
-                    <td class="text-end">
-                        <a asp-action="Details" asp-route-id="@e.Id" class="btn btn-sm btn-outline-secondary">View</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        // Runs whenever the user types in the search box
+        document.getElementById("searchBox").addEventListener("input", function () {
+
+            // Get the text entered by the user
+            const text = this.value.toLowerCase();
+
+            // Check every event row in the table
+            document.querySelectorAll("#eventRows tr").forEach(function (row) {
+
+                // Search the event name, type, date, location, guests, budget, and status
+                const rowText = row.textContent.toLowerCase();
+
+                // Display matching rows and hide non-matching rows
+                row.style.display = rowText.includes(text) ? "" : "none";
+            });
+        });
+    </script>
 }

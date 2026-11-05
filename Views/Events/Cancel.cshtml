@@ -1,23 +1,43 @@
 @model SSKT_Events.Models.EventRecord
+
 @{
-    ViewData["Title"] = "Cancel Event";
+    ViewData["Title"] = "Cancel";
 }
 
-<h1 class="h3 mb-4">Cancel Event</h1>
+<h1>Cancel Event</h1>
 
-<div class="alert alert-warning">
-    Are you sure you want to cancel <strong>@Model.Name</strong> on @Model.EventDate.ToString("MMMM dd, yyyy")?
-    Your supplier bookings for this event will be cancelled too. The event record is kept for reference.
-</div>
+<h4>Are you sure you want to cancel this event?</h4>
+<hr />
 
-<form asp-action="Cancel" method="post" class="col-md-6">
+<dl class="row">
+    <dt class="col-sm-3">Event Name</dt>
+    <dd class="col-sm-9">@Model.Name</dd>
+
+    <dt class="col-sm-3">Event Date</dt>
+    <dd class="col-sm-9">@Model.EventDate.ToString("MMMM dd, yyyy")</dd>
+
+    <dt class="col-sm-3">Location</dt>
+    <dd class="col-sm-9">@Model.Location</dd>
+
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9">@Model.Status</dd>
+</dl>
+
+<p class="text-danger">
+    Your supplier bookings for this event will also be cancelled.
+    The event record will be kept for reference.
+</p>
+
+<form asp-action="Cancel" method="post">
     <input type="hidden" name="id" value="@Model.Id" />
 
-    <div class="mb-3">
-        <label class="form-label">Reason (optional)</label>
-        <textarea name="reason" class="form-control" rows="3"></textarea>
+    <div class="form-group mb-3">
+        <label for="reason" class="control-label">Reason (optional)</label>
+        <textarea name="reason" id="reason" class="form-control" rows="3"></textarea>
     </div>
 
-    <button type="submit" class="btn btn-danger">Yes, Cancel Event</button>
-    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">No, Go Back</a>
+    <div class="form-group">
+        <input type="submit" value="Yes, Cancel Event" class="btn btn-danger" />
+        <a asp-action="Details" asp-route-id="@Model.Id">No, Go Back</a>
+    </div>
 </form>

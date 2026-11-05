@@ -1,4 +1,6 @@
+
 @using SSKT_Events.Models
+
 @{
     ViewData["Title"] = "Book Services";
 
@@ -9,75 +11,124 @@
     var allServices = SSKT_Events.Controllers.CatalogController.services;
 }
 
-<h1 class="h3 mb-1">Book for: @ev.Name</h1>
-<p class="text-muted mb-4">
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-    @ev.EventDate.ToString("MMMM dd, yyyy") | Budget: ₱@ev.TotalBudget.ToString("N2") | Remaining: ₱@ev.RemainingBudget.ToString("N2")
+<h1>Book Services</h1>
+
+<h4>Event: @ev.Name</h4>
+
+<p>
+    Event Date: @ev.EventDate.ToString("MMMM dd, yyyy")
+    <br />
+    Total Budget: ₱@ev.TotalBudget.ToString("N2")
+    <br />
+    Remaining Budget: ₱@ev.RemainingBudget.ToString("N2")
 </p>
 
-<h2 class="h5">Packages</h2>
-<div class="row g-3 mb-5">
-    @foreach (var p in packages)
-    {
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h3 class="h6">@p.Name</h3>
-                    <p class="text-muted small">@p.Description</p>
-                    <p class="small mb-2">
-                        <strong>Includes:</strong>
-                        @string.Join(", ", allServices.Where(s => p.ServiceIds.Contains(s.Id)).Select(s => s.Name))
-                    </p>
-                    <p class="fw-bold">₱@p.Price.ToString("N2")</p>
-                </div>
-                <div class="card-footer bg-white">
-                    <form asp-action="BookPackage" method="post">
-                        <input type="hidden" name="eventId" value="@ev.Id" />
-                        <input type="hidden" name="packageId" value="@p.Id" />
-                        <button type="submit" class="btn btn-primary btn-sm">Book Package</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    }
-</div>
+<hr />
 
-<h2 class="h5">Individual Services</h2>
-<table class="table align-middle">
-    <thead>
-        <tr>
-            <th>Service</th>
-            <th>Supplier</th>
-            <th>Description</th>
-            <th class="text-end">Price</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var s in services)
-        {
+@if (TempData["Error"] != null)
+{
+    <p class="text-danger">@TempData["Error"]</p>
+}
+
+@if (TempData["Success"] != null)
+{
+    <p class="text-success">@TempData["Success"]</p>
+}
+
+<h4>Available Packages</h4>
+
+@if (!packages.Any())
+{
+    <p>No packages are currently available.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
             <tr>
-                <td class="fw-semibold">@s.Name</td>
-                <td>@suppliers.FirstOrDefault(x => x.Id == s.SupplierId)?.Name</td>
-                <td>@s.Description</td>
-                <td class="text-end">₱@s.Price.ToString("N2")</td>
-                <td class="text-end">
-                    <form asp-action="BookService" method="post">
-                        <input type="hidden" name="eventId" value="@ev.Id" />
-                        <input type="hidden" name="serviceId" value="@s.Id" />
-                        <button type="submit" class="btn btn-outline-primary btn-sm">Book</button>
-                    </form>
-                </td>
+                <th>Package</th>
+                <th>Description</th>
+                <th>Included Services</th>
+                <th>Price</th>
+                <th>Action</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var p in packages)
+            {
+                <tr>
+                    <td>@p.Name</td>
+                    <td>@p.Description</td>
+                    <td>
+                        @string.Join(", ", allServices
+                            .Where(s => p.ServiceIds.Contains(s.Id))
+                            .Select(s => s.Name))
+                    </td>
+                    <td>₱@p.Price.ToString("N2")</td>
+                    <td>
+                        <form asp-action="BookPackage" method="post">
+                            <input type="hidden" name="eventId" value="@ev.Id" />
+                            <input type="hidden" name="packageId" value="@p.Id" />
 
-<a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="btn btn-outline-secondary">Back to Event</a>
+                            <button type="submit" class="btn btn-primary">
+                                Book Package
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<hr />
+
+<h4>Individual Services</h4>
+
+@if (!services.Any())
+{
+    <p>No individual services are currently available.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Supplier</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in services)
+            {
+                <tr>
+                    <td>@s.Name</td>
+                    <td>@suppliers.FirstOrDefault(x => x.Id == s.SupplierId)?.Name</td>
+                    <td>@s.Description</td>
+                    <td>₱@s.Price.ToString("N2")</td>
+                    <td>
+                        <form asp-action="BookService" method="post">
+                            <input type="hidden" name="eventId" value="@ev.Id" />
+                            <input type="hidden" name="serviceId" value="@s.Id" />
+
+                            <button type="submit" class="btn btn-primary">
+                                Book
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<hr />
+
+<a asp-controller="Events"
+   asp-action="Details"
+   asp-route-id="@ev.Id">
+    Back to Event
+</a>

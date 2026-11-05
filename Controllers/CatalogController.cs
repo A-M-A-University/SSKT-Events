@@ -58,7 +58,7 @@ public class CatalogController : Controller
 
         return View();
     }
-        [HttpPost]
+    [HttpPost]
     public IActionResult BookService(int eventId, int serviceId)
     {
         var ev = EventsController.events.FirstOrDefault(e => e.Id == eventId);
@@ -68,6 +68,7 @@ public class CatalogController : Controller
             return NotFound();
 
         var error = CheckBookable(ev, service);
+
         if (error != null)
         {
             TempData["Error"] = error;
@@ -77,6 +78,7 @@ public class CatalogController : Controller
         ev.Bookings.Add(CreateBooking(ev, service, service.Price, null));
 
         TempData["Success"] = service.Name + " requested. Waiting for the supplier to accept.";
+
         return RedirectToAction("Details", "Events", new { id = eventId });
     }
 
@@ -89,12 +91,25 @@ public class CatalogController : Controller
         if (ev == null || package == null)
             return NotFound();
 
-        var included = services.Where(s => package.ServiceIds.Contains(s.Id)).ToList();
+        // Get the package's selected services
+        var serviceIds = package.ServiceIds.Distinct().ToList();
 
-        // Check every service first, so a package is booked whole or not at all
+        var included = services
+            .Where(s => serviceIds.Contains(s.Id) && s.IsActive)
+            .ToList();
+
+        // Make sure all package services are available
+        if (included.Count == 0 || included.Count != serviceIds.Count)
+        {
+            TempData["Error"] = "One or more services in this package are unavailable.";
+            return RedirectToAction("Index", new { eventId });
+        }
+
+        // Check every service before creating any bookings
         foreach (var service in included)
         {
             var error = CheckBookable(ev, service);
+
             if (error != null)
             {
                 TempData["Error"] = "Can't book " + package.Name + ": " + error;
@@ -102,16 +117,35 @@ public class CatalogController : Controller
             }
         }
 
-        // Split the package price across its services, in proportion to each service's price
+        // Calculate each service's share of the package price
         var totalServicePrice = included.Sum(s => s.Price);
+        decimal remainingPrice = package.Price;
 
-        foreach (var service in included)
+        for (int i = 0; i < included.Count; i++)
         {
-            var share = totalServicePrice == 0 ? 0 : Math.Round(package.Price * service.Price / totalServicePrice, 2);
+            var service = included[i];
+
+            decimal share;
+
+            if (i == included.Count - 1)
+            {
+                // Assign any rounding difference to the last service
+                share = remainingPrice;
+            }
+            else
+            {
+                share = totalServicePrice == 0
+                    ? 0
+                    : Math.Round(package.Price * service.Price / totalServicePrice, 2);
+
+                remainingPrice -= share;
+            }
+
             ev.Bookings.Add(CreateBooking(ev, service, share, package.Id));
         }
 
         TempData["Success"] = package.Name + " requested. Waiting for the suppliers to accept.";
+
         return RedirectToAction("Details", "Events", new { id = eventId });
     }
 
@@ -121,18 +155,32 @@ public class CatalogController : Controller
         if (ev.Status == EventStatus.Cancelled)
             return "This event is cancelled.";
 
-        var alreadyBooked = ev.Bookings.Any(b => b.ServiceId == service.Id
-            && (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Accepted));
+        if (!service.IsActive)
+            return service.Name + " is currently unavailable.";
+
+        var supplierExists = suppliers.Any(s => s.Id == service.SupplierId);
+
+        if (!supplierExists)
+            return "The supplier for " + service.Name + " could not be found.";
+
+        var alreadyBooked = ev.Bookings.Any(b =>
+            b.ServiceId == service.Id &&
+            (b.Status == BookingStatus.Pending ||
+            b.Status == BookingStatus.Accepted));
+
         if (alreadyBooked)
             return service.Name + " is already booked for this event.";
 
         var supplierTaken = EventsController.events
             .SelectMany(e => e.Bookings)
-            .Any(b => b.SupplierId == service.SupplierId
-                && b.BookingDate.Date == ev.EventDate.Date
-                && b.Status == BookingStatus.Accepted);
+            .Any(b =>
+                b.SupplierId == service.SupplierId &&
+                b.BookingDate.Date == ev.EventDate.Date &&
+                b.Status == BookingStatus.Accepted);
+
         if (supplierTaken)
-            return service.Name + " is not available on " + ev.EventDate.ToString("MMM dd, yyyy") + ".";
+            return service.Name + " is not available on " +
+                ev.EventDate.ToString("MMM dd, yyyy") + ".";
 
         return null;
     }

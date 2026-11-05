@@ -1,10 +1,13 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SSKT_Events.Models;
 
 public class SupplierService
 {
+    [Key]
     public int Id { get; set; }
+
     public int SupplierId { get; set; }
 
     [ForeignKey(nameof(SupplierId))]

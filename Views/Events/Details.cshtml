@@ -1,157 +1,190 @@
 @model SSKT_Events.Models.EventRecord
+
 @{
-    ViewData["Title"] = Model.Name;
+    ViewData["Title"] = "Details";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3 mb-0">@Model.Name</h1>
-    <span class="badge bg-secondary fs-6">@Model.Status</span>
-</div>
+<h1>Details</h1>
+
+<h4>Event Record</h4>
+<hr />
 
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger">@TempData["Error"]</div>
+    <p class="text-danger">@TempData["Error"]</p>
 }
+
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">@TempData["Success"]</div>
+    <p class="text-success">@TempData["Success"]</p>
 }
 
-<div class="row g-4">
-    <!-- Event info -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header fw-semibold">Event Information</div>
-            <div class="card-body">
-                <p class="mb-1"><strong>Type:</strong> @Model.Type</p>
-                <p class="mb-1"><strong>Date:</strong> @Model.EventDate.ToString("MMMM dd, yyyy")</p>
-                <p class="mb-1"><strong>Time:</strong> @Model.StartTime.ToString(@"hh\:mm") - @Model.EndTime.ToString(@"hh\:mm")</p>
-                <p class="mb-1"><strong>Location:</strong> @Model.Location</p>
-                <p class="mb-1"><strong>Expected Guests:</strong> @Model.ExpectedGuests</p>
-                <p class="mb-1"><strong>Description:</strong> @Model.Description</p>
-                <p class="mb-0"><strong>Special Requirements:</strong> @Model.SpecialRequirements</p>
-            </div>
-        </div>
-    </div>
+<div>
+    <h5>Event Information</h5>
+    <hr />
 
-    <!-- Budget summary -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header fw-semibold">Budget Summary</div>
-            <div class="card-body">
-                <p class="mb-1"><strong>Total Budget:</strong> ₱@Model.TotalBudget.ToString("N2")</p>
-                <p class="mb-1"><strong>Booked Services:</strong> ₱@Model.TotalBookedCost.ToString("N2")</p>
-                <p class="mb-1"><strong>Remaining:</strong> ₱@Model.RemainingBudget.ToString("N2")</p>
-                <p class="mb-2"><strong>Used:</strong> @Model.BudgetUsedPercent.ToString("0")%</p>
-                <div class="progress mb-2">
-                    <div class="progress-bar @(Model.IsOverBudget ? "bg-danger" : "bg-success")"
-                         style="width: @(Math.Min(Model.BudgetUsedPercent, 100).ToString("0"))%"></div>
-                </div>
-                @if (Model.IsOverBudget)
-                {
-                    <div class="alert alert-danger py-2 mb-0">Budget exceeded!</div>
-                }
-            </div>
-        </div>
-    </div>
+    <dl class="row">
+        <dt class="col-sm-3">Event Name</dt>
+        <dd class="col-sm-9">@Model.Name</dd>
 
-    <!-- Bookings -->
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header fw-semibold">Supplier Bookings</div>
-            <div class="card-body">
-                @if (!Model.Bookings.Any())
-                {
-                    <p class="text-muted mb-0">No bookings yet.</p>
-                }
-                else
-                {
-                    <table class="table align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Service</th>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th class="text-end">Price</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var b in Model.Bookings)
-                            {
-                                <tr>
-                                    <td>@b.ServiceName @(b.IsFromPackage ? "(package)" : "")</td>
-                                    <td>@b.BookingDate.ToString("MMM dd, yyyy")</td>
-                                    <td>@b.StartTime.ToString(@"hh\:mm") - @b.EndTime.ToString(@"hh\:mm")</td>
-                                    <td class="text-end">₱@b.Price.ToString("N2")</td>
-                                    <td>@b.Status</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-            </div>
-        </div>
-    </div>
+        <dt class="col-sm-3">Event Type</dt>
+        <dd class="col-sm-9">@Model.Type</dd>
 
-    <!-- Payments -->
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header fw-semibold">Payment Summary</div>
-            <div class="card-body">
-                <p class="mb-1"><strong>Total Paid:</strong> ₱@Model.TotalPaid.ToString("N2")</p>
-                <p class="mb-3"><strong>Outstanding Balance:</strong> ₱@Model.OutstandingBalance.ToString("N2")</p>
-                @if (Model.Status != SSKT_Events .Models.EventStatus.Cancelled)
-                {
-                    if (Model.HasConfirmedBookings)
-                    {
-                        <a asp-action="AddPayment" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-primary mb-3">+ Add Payment</a>
-                    }
-                    else
-                    {
-                        <p class="text-muted small">Payments open once a supplier accepts a booking.</p>
-                    }
-                }
-                @if (Model.Payments.Any())
-                {
-                    <table class="table align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>Due Date</th>
-                                <th class="text-end">Amount</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var p in Model.Payments)
-                            {
-                                <tr>
-                                    <td>@(p.IsDownPayment ? "Down payment" : "Payment")</td>
-                                    <td>@p.DueDate.ToString("MMM dd, yyyy")</td>
-                                    <td class="text-end">₱@p.Amount.ToString("N2")</td>
-                                    <td>@(p.IsPaid ? "Paid" : p.IsOverdue ? "Overdue" : "Unpaid")</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-            </div>
-        </div>
-    </div>
-</div>
+        <dt class="col-sm-3">Event Date</dt>
+        <dd class="col-sm-9">@Model.EventDate.ToString("MMMM dd, yyyy")</dd>
 
-<div class="mt-4">
-    <a asp-action="Index" class="btn btn-outline-secondary">Back to Events</a>
+        <dt class="col-sm-3">Start Time</dt>
+        <dd class="col-sm-9">@Model.StartTime.ToString(@"hh\:mm")</dd>
 
-    @if (Model.Status != SSKT_Events.Models.EventStatus.Cancelled)
+        <dt class="col-sm-3">End Time</dt>
+        <dd class="col-sm-9">@Model.EndTime.ToString(@"hh\:mm")</dd>
+
+        <dt class="col-sm-3">Location</dt>
+        <dd class="col-sm-9">@Model.Location</dd>
+
+        <dt class="col-sm-3">Expected Guests</dt>
+        <dd class="col-sm-9">@Model.ExpectedGuests</dd>
+
+        <dt class="col-sm-3">Description</dt>
+        <dd class="col-sm-9">@Model.Description</dd>
+
+        <dt class="col-sm-3">Special Requirements</dt>
+        <dd class="col-sm-9">@Model.SpecialRequirements</dd>
+
+        <dt class="col-sm-3">Status</dt>
+        <dd class="col-sm-9">@Model.Status</dd>
+    </dl>
+
+    <h5>Budget Summary</h5>
+    <hr />
+
+    <dl class="row">
+        <dt class="col-sm-3">Total Budget</dt>
+        <dd class="col-sm-9">₱@Model.TotalBudget.ToString("N2")</dd>
+
+        <dt class="col-sm-3">Booked Services</dt>
+        <dd class="col-sm-9">₱@Model.TotalBookedCost.ToString("N2")</dd>
+
+        <dt class="col-sm-3">Remaining Budget</dt>
+        <dd class="col-sm-9">₱@Model.RemainingBudget.ToString("N2")</dd>
+
+        <dt class="col-sm-3">Budget Used</dt>
+        <dd class="col-sm-9">@Model.BudgetUsedPercent.ToString("0")%</dd>
+    </dl>
+
+    @if (Model.IsOverBudget)
     {
-        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit Event</a>
-        <a asp-action="Cancel" asp-route-id="@Model.Id" class="btn btn-danger">Cancel Event</a>
-        <a asp-controller="Catalog" asp-action="Index" asp-route-eventId="@Model.Id" class="btn btn-success">Browse & Book</a>
+        <p class="text-danger">Warning: Event budget exceeded!</p>
+    }
+
+    <h5>Supplier Bookings</h5>
+    <hr />
+
+    @if (!Model.Bookings.Any())
+    {
+        <p>No bookings yet.</p>
     }
     else
     {
-        <span class="text-danger ms-2">Cancelled on @Model.CancelledAt?.ToString("MMM dd, yyyy") @(string.IsNullOrWhiteSpace(Model.CancellationReason) ? "" : "- " + Model.CancellationReason)</span>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model.Bookings)
+                {
+                    <tr>
+                        <td>@b.ServiceName @(b.IsFromPackage ? "(package)" : "")</td>
+                        <td>@b.BookingDate.ToString("MMM dd, yyyy")</td>
+                        <td>@b.StartTime.ToString(@"hh\:mm") - @b.EndTime.ToString(@"hh\:mm")</td>
+                        <td>₱@b.Price.ToString("N2")</td>
+                        <td>@b.Status</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <h5>Payment Summary</h5>
+    <hr />
+
+    <dl class="row">
+        <dt class="col-sm-3">Total Paid</dt>
+        <dd class="col-sm-9">₱@Model.TotalPaid.ToString("N2")</dd>
+
+        <dt class="col-sm-3">Outstanding Balance</dt>
+        <dd class="col-sm-9">₱@Model.OutstandingBalance.ToString("N2")</dd>
+    </dl>
+
+    @if (Model.Status != SSKT_Events.Models.EventStatus.Cancelled)
+    {
+        @if (Model.HasConfirmedBookings)
+        {
+            <a asp-action="AddPayment" asp-route-id="@Model.Id">Add Payment</a>
+        }
+        else
+        {
+            <p>Payments open once a supplier accepts a booking.</p>
+        }
+    }
+
+    @if (Model.Payments.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.Payments)
+                {
+                    <tr>
+                        <td>@(p.IsDownPayment ? "Down payment" : "Payment")</td>
+                        <td>@p.DueDate.ToString("MMM dd, yyyy")</td>
+                        <td>₱@p.Amount.ToString("N2")</td>
+                        <td>@(p.IsPaid ? "Paid" : p.IsOverdue ? "Overdue" : "Unpaid")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<hr />
+
+<div>
+    <a asp-action="Index">Back to Events</a>
+
+    @if (Model.Status != SSKT_Events.Models.EventStatus.Cancelled)
+    {
+        <span> | </span>
+        <a asp-action="Edit" asp-route-id="@Model.Id">Edit Event</a>
+
+        <span> | </span>
+        <a asp-action="Cancel" asp-route-id="@Model.Id">Cancel Event</a>
+
+        <span> | </span>
+        <a asp-controller="Catalog"
+           asp-action="Index"
+           asp-route-eventId="@Model.Id">Browse & Book</a>
+    }
+    else
+    {
+        <p class="text-danger">
+            Cancelled on @Model.CancelledAt?.ToString("MMM dd, yyyy")
+            @(string.IsNullOrWhiteSpace(Model.CancellationReason)
+                ? ""
+                : "- " + Model.CancellationReason)
+        </p>
     }
 </div>

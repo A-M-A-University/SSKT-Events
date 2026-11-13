@@ -146,6 +146,7 @@ public class EventsController : Controller
         return View(eventRecord);
     }
 
+    
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult AddPayment(
@@ -178,23 +179,37 @@ public class EventsController : Controller
             return RedirectToAction("AddPayment", new { id = eventId });
         }
 
-        if (amount > eventRecord.OutstandingBalance)
-        {
-            TempData["Error"] = "Payment can't be more than the outstanding balance (₱"
-                + eventRecord.OutstandingBalance.ToString("N2") + ").";
-
-            return RedirectToAction("AddPayment", new { id = eventId });
-        }
-
         if (dueDate == default)
         {
             TempData["Error"] = "Please provide a valid payment due date.";
             return RedirectToAction("AddPayment", new { id = eventId });
         }
 
+        // Prevent an identical payment entry
+        bool duplicatePayment = eventRecord.Payments.Any(p =>
+            p.Amount == amount &&
+            p.DueDate.Date == dueDate.Date &&
+            p.IsDownPayment == isDownPayment &&
+            p.IsPaid == markPaid);
+
+        if (duplicatePayment)
+        {
+            TempData["Error"] = "This payment entry already exists.";
+            return RedirectToAction("AddPayment", new { id = eventId });
+        }
+
+        // Prevent the payment from exceeding the outstanding balance
+        if (amount > eventRecord.OutstandingBalance)
+        {
+            TempData["Error"] = "Payment cannot exceed the outstanding balance of ₱"
+                + eventRecord.OutstandingBalance.ToString("N2") + ".";
+
+            return RedirectToAction("AddPayment", new { id = eventId });
+        }
+
         var allPayments = events.SelectMany(e => e.Payments).ToList();
 
-        var newId = allPayments.Count == 0
+        int newId = allPayments.Count == 0
             ? 1
             : allPayments.Max(p => p.Id) + 1;
 
@@ -213,12 +228,19 @@ public class EventsController : Controller
             payment.ReceiptNumber = "RCPT-" + newId.ToString("0000");
         }
 
+        if (dueDate.Date < DateTime.Today)
+        {
+            TempData["Error"] = "Payment due date cannot be in the past.";
+            return RedirectToAction("AddPayment", new { id = eventId });
+        }
+
         eventRecord.Payments.Add(payment);
 
         TempData["Success"] = "Payment successfully added.";
 
         return RedirectToAction("Details", new { id = eventId });
     }
+
 
     // Index
     public IActionResult Index()

@@ -55,7 +55,7 @@ public class EventRecord
 
     [Display(Name = "Special Requirements")]
     [StringLength(1000, ErrorMessage = "Special requirements cannot exceed 1,000 characters.")]
-    public string SpecialRequirements { get; set; } = string.Empty;
+    public string? SpecialRequirements { get; set; }
 
     // Budget and its status
     [Display(Name = "Total Budget")]

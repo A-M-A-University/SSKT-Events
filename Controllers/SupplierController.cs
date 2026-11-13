@@ -39,10 +39,13 @@ public class SupplierController : Controller
         if (booking.Status != BookingStatus.Pending)
             return RedirectToAction("Index", new { supplierId });
 
+        // Check if the supplier has an accepted booking
+        // for a DIFFERENT event on the same date.
         var dateTaken = EventsController.events
             .SelectMany(e => e.Bookings)
             .Any(b =>
                 b.SupplierId == supplierId &&
+                b.EventId != booking.EventId &&
                 b.Id != booking.Id &&
                 b.BookingDate.Date == booking.BookingDate.Date &&
                 b.Status == BookingStatus.Accepted);
@@ -50,13 +53,15 @@ public class SupplierController : Controller
         if (dateTaken)
         {
             TempData["Error"] =
-                "You already have an accepted booking on " +
+                "You already have an accepted booking for a different event on " +
                 booking.BookingDate.ToString("MMM dd, yyyy") + ".";
 
             return RedirectToAction("Index", new { supplierId });
         }
 
         booking.Status = BookingStatus.Accepted;
+
+        TempData["Success"] = "Booking successfully accepted.";
 
         return RedirectToAction("Index", new { supplierId });
     }

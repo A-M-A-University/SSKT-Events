@@ -23,7 +23,7 @@ namespace SSKT_Events.Validation
                 .GetProperty(_startTimeProperty);
 
             if (property == null)
-                return new ValidationResult("Start time property not found.");
+                return new ValidationResult("Not found.");
 
             TimeSpan startTime = (TimeSpan)property.GetValue(validationContext.ObjectInstance)!;
             TimeSpan endTime = (TimeSpan)value;

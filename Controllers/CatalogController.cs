@@ -58,6 +58,7 @@ public class CatalogController : Controller
 
         return View();
     }
+
     [HttpPost]
     public IActionResult BookService(int eventId, int serviceId)
     {
@@ -76,6 +77,9 @@ public class CatalogController : Controller
         }
 
         ev.Bookings.Add(CreateBooking(ev, service, service.Price, null));
+
+        // Clear any previous error message after a successful booking
+        TempData.Remove("Error");
 
         TempData["Success"] = service.Name + " requested. Waiting for the supplier to accept.";
 
@@ -144,6 +148,9 @@ public class CatalogController : Controller
             ev.Bookings.Add(CreateBooking(ev, service, share, package.Id));
         }
 
+        // Clear any previous error message after a successful booking
+        TempData.Remove("Error");
+
         TempData["Success"] = package.Name + " requested. Waiting for the suppliers to accept.";
 
         return RedirectToAction("Details", "Events", new { id = eventId });
@@ -166,15 +173,18 @@ public class CatalogController : Controller
         var alreadyBooked = ev.Bookings.Any(b =>
             b.ServiceId == service.Id &&
             (b.Status == BookingStatus.Pending ||
-            b.Status == BookingStatus.Accepted));
+             b.Status == BookingStatus.Accepted));
 
         if (alreadyBooked)
             return service.Name + " is already booked for this event.";
 
+        // Check whether the supplier has an accepted booking
+        // for a DIFFERENT event on the same date.
         var supplierTaken = EventsController.events
             .SelectMany(e => e.Bookings)
             .Any(b =>
                 b.SupplierId == service.SupplierId &&
+                b.EventId != ev.Id &&
                 b.BookingDate.Date == ev.EventDate.Date &&
                 b.Status == BookingStatus.Accepted);
 

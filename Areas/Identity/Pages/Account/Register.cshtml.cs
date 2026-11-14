@@ -4,16 +4,16 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Text;
-using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SSKT_Events.Data;
+using SSKT_Events.Models;
 
 namespace SSKT_Events.Areas.Identity.Pages.Account
 {
@@ -24,11 +24,12 @@ namespace SSKT_Events.Areas.Identity.Pages.Account
         private readonly IUserStore<IdentityUser> _userStore;
         private readonly IUserEmailStore<IdentityUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
+        private readonly ApplicationDbContext _context;
 
         private static readonly string[] AllowedRoles =
         {
             "Client",
-            "Event Manager",
+            "Organizer",
             "Supplier"
         };
 
@@ -36,13 +37,15 @@ namespace SSKT_Events.Areas.Identity.Pages.Account
             UserManager<IdentityUser> userManager,
             IUserStore<IdentityUser> userStore,
             SignInManager<IdentityUser> signInManager,
-            ILogger<RegisterModel> logger)
+            ILogger<RegisterModel> logger,
+            ApplicationDbContext context)
         {
             _userManager = userManager;
             _userStore = userStore;
             _emailStore = (IUserEmailStore<IdentityUser>)userStore;
             _signInManager = signInManager;
             _logger = logger;
+            _context = context;
         }
 
         [BindProperty]
@@ -60,10 +63,20 @@ namespace SSKT_Events.Areas.Identity.Pages.Account
             public string Email { get; set; }
 
             [Required]
-            [RegularExpression("^(Client|Event Manager|Supplier)$",
+            [RegularExpression("^(Client|Organizer|Supplier)$",
                 ErrorMessage = "Please select a valid account type.")]
             [Display(Name = "Account Type")]
             public string Role { get; set; }
+
+            [Required]
+            [StringLength(100)]
+            [Display(Name = "Full Name")]
+            public string Name { get; set; }
+
+            [Phone]
+            [StringLength(20)]
+            [Display(Name = "Phone Number")]
+            public string Phone { get; set; }
 
             [Required]
             [StringLength(100, MinimumLength = 6,
@@ -82,6 +95,7 @@ namespace SSKT_Events.Areas.Identity.Pages.Account
         public async Task OnGetAsync(string returnUrl = null)
         {
             ReturnUrl = returnUrl;
+
             ExternalLogins =
                 (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         }
@@ -93,16 +107,28 @@ namespace SSKT_Events.Areas.Identity.Pages.Account
             ExternalLogins =
                 (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
+            if (!AllowedRoles.Contains(Input.Role))
+            {
+                ModelState.AddModelError("Input.Role", "Invalid account type.");
+            }
+
+            if (Input.Role == "Organizer" || Input.Role == "Supplier")
+            {
+                if (string.IsNullOrWhiteSpace(Input.Phone))
+                {
+                    ModelState.AddModelError(
+                        "Input.Phone",
+                        "Please enter a phone number.");
+                }
+            }
+
             if (!ModelState.IsValid)
             {
                 return Page();
             }
 
-            if (!AllowedRoles.Contains(Input.Role))
-            {
-                ModelState.AddModelError("Input.Role", "Invalid account type.");
-                return Page();
-            }
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
 
             var user = new IdentityUser();
 
@@ -112,38 +138,79 @@ namespace SSKT_Events.Areas.Identity.Pages.Account
             await _emailStore.SetEmailAsync(
                 user, Input.Email, CancellationToken.None);
 
-            var result = await _userManager.CreateAsync(user, Input.Password);
+            var result = await _userManager.CreateAsync(
+                user, Input.Password);
 
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                var roleResult = await _userManager.AddToRoleAsync(user, Input.Role);
+                await transaction.RollbackAsync();
 
-                if (!roleResult.Succeeded)
+                foreach (var error in result.Errors)
                 {
-                    await _userManager.DeleteAsync(user);
-
-                    foreach (var error in roleResult.Errors)
-                    {
-                        ModelState.AddModelError(string.Empty, error.Description);
-                    }
-
-                    return Page();
+                    ModelState.AddModelError(string.Empty, error.Description);
                 }
 
-                _logger.LogInformation("User created a new account with role {Role}.",
-                    Input.Role);
-
-                await _signInManager.SignInAsync(user, isPersistent: false);
-
-                return LocalRedirect(Url.Content("~/"));
+                return Page();
             }
 
-            foreach (var error in result.Errors)
+            var roleResult = await _userManager.AddToRoleAsync(
+                user, Input.Role);
+
+            if (!roleResult.Succeeded)
             {
-                ModelState.AddModelError(string.Empty, error.Description);
+                await transaction.RollbackAsync();
+
+                foreach (var error in roleResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                return Page();
             }
 
-            return Page();
+            // Create the corresponding profile
+            switch (Input.Role)
+            {
+                case "Client":
+                    _context.Customers.Add(new Customer
+                    {
+                        Name = Input.Name,
+                        Email = Input.Email,
+                        UserId = user.Id
+                    });
+                    break;
+
+                case "Organizer":
+                    _context.Organizers.Add(new Organizer
+                    {
+                        Name = Input.Name,
+                        Email = Input.Email,
+                        Phone = Input.Phone,
+                        UserId = user.Id
+                    });
+                    break;
+
+                case "Supplier":
+                    _context.Suppliers.Add(new Supplier
+                    {
+                        Name = Input.Name,
+                        Email = Input.Email,
+                        Phone = Input.Phone,
+                        UserId = user.Id
+                    });
+                    break;
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation(
+                "User created a new account with role {Role}.",
+                Input.Role);
+
+            await _signInManager.SignInAsync(user, isPersistent: false);
+
+            return LocalRedirect(returnUrl);
         }
     }
 }

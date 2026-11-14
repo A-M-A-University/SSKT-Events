@@ -1,4 +1,3 @@
-
 @using SSKT_Events.Models
 
 @{
@@ -21,7 +20,6 @@
 }
 
 <form asp-action="CreatePackage" method="post">
-    <input type="hidden" name="organizerId" value="@organizer.Id" />
 
     <div class="form-group mb-3">
         <label class="control-label">Package Name</label>
@@ -64,9 +62,6 @@
 
     <div class="form-group">
         <input type="submit" value="Save Package" class="btn btn-primary" />
-        <a asp-action="Packages"
-           asp-route-organizerId="@organizer.Id">
-            Cancel
-        </a>
+        <a asp-action="Packages">Cancel</a>
     </div>
 </form>

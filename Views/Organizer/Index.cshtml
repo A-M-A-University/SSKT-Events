@@ -1,4 +1,3 @@
-
 @using SSKT_Events.Models
 
 @{
@@ -12,16 +11,6 @@
 <h1>Organizer Home</h1>
 
 <p>Logged in as: <strong>@organizer.Name</strong></p>
-
-<hr />
-
-<h4>Switch Organizer (Testing Only)</h4>
-
-@foreach (var o in SSKT_Events.Controllers.OrganizerController.organizers)
-{
-    <a asp-action="Index" asp-route-organizerId="@o.Id">@o.Name</a>
-    <span> | </span>
-}
 
 <hr />
 

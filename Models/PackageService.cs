@@ -6,9 +6,11 @@ public class PackageService
 {
     [Key]
     public int Id { get; set; }
+
     public int PackageId { get; set; }
     [ForeignKey("PackageId")]
     public EventPackage? Package { get; set; }
+    
     public int ServiceId { get; set; }
     [ForeignKey("ServiceId")]
     public SupplierService? Service { get; set; }

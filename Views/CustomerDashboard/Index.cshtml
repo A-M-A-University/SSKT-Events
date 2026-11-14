@@ -1,0 +1,70 @@
+
+@{
+    ViewData["Title"] = "Customer Dashboard";
+}
+
+<div style="background: #fff; color: #222; min-height: 100vh; padding: 32px;">
+    <h2 style="font-weight: 600; margin-bottom: 8px;">Customer Dashboard</h2>
+    <p style="color: #777; margin-bottom: 32px;">
+        Welcome back! Here's an overview of your events.
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px;">
+        <div style="border: 1px solid #e5e5e5; padding: 20px; border-radius: 8px;">
+            <p style="color: #777; margin: 0;">Total Events</p>
+            <h2 style="margin: 8px 0 0;">12</h2>
+        </div>
+
+        <div style="border: 1px solid #e5e5e5; padding: 20px; border-radius: 8px;">
+            <p style="color: #777; margin: 0;">Upcoming Events</p>
+            <h2 style="margin: 8px 0 0;">3</h2>
+        </div>
+
+        <div style="border: 1px solid #e5e5e5; padding: 20px; border-radius: 8px;">
+            <p style="color: #777; margin: 0;">Pending Approval</p>
+            <h2 style="margin: 8px 0 0;">2</h2>
+        </div>
+
+        <div style="border: 1px solid #e5e5e5; padding: 20px; border-radius: 8px;">
+            <p style="color: #777; margin: 0;">Completed Events</p>
+            <h2 style="margin: 8px 0 0;">7</h2>
+        </div>
+    </div>
+
+    <div style="border: 1px solid #e5e5e5; border-radius: 8px; padding: 24px;">
+        <h3 style="font-size: 18px; margin-bottom: 20px;">Recent Events</h3>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e5e5e5; text-align: left;">
+                        <th style="padding: 12px;">Event Name</th>
+                        <th style="padding: 12px;">Date</th>
+                        <th style="padding: 12px;">Location</th>
+                        <th style="padding: 12px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 12px;">Annual Company Gathering</td>
+                        <td style="padding: 12px;">November 20, 2026</td>
+                        <td style="padding: 12px;">Makati City</td>
+                        <td style="padding: 12px;">Approved</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 12px;">Product Launch</td>
+                        <td style="padding: 12px;">December 5, 2026</td>
+                        <td style="padding: 12px;">Quezon City</td>
+                        <td style="padding: 12px;">Pending</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px;">Team Building</td>
+                        <td style="padding: 12px;">October 15, 2026</td>
+                        <td style="padding: 12px;">Antipolo City</td>
+                        <td style="padding: 12px;">Completed</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

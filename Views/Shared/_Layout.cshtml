@@ -12,8 +12,10 @@
 </head>
 <body>
     @{
-        var isCustomerDashboard =
-            ViewContext.RouteData.Values["controller"]?.ToString() == "CustomerDashboard";
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+
+        var isCustomerDashboard = currentController == "CustomerDashboard";
+        var isSupplierDashboard = currentController == "Supplier";
     }
 
     @if (isCustomerDashboard)
@@ -36,7 +38,33 @@
                 </nav>
             </aside>
 
-            <main role="main" style="flex: 1; min-width: 0;">
+            <main role="main" style="flex: 1; min-width: 0; padding: 25px;">
+                @RenderBody()
+            </main>
+
+        </div>
+    }
+    else if (isSupplierDashboard)
+    {
+        <div style="display: flex; min-height: 100vh; background: white;">
+
+            <aside style="width: 240px; flex-shrink: 0; border-right: 1px solid #e5e5e5; padding: 28px 18px;">
+                <h4 style="font-weight: 700; margin-bottom: 35px;">SSKT Events</h4>
+
+                <nav style="display: flex; flex-direction: column; gap: 8px;">
+                    <a asp-controller="Supplier" asp-action="Index"
+                       style="padding: 12px; color: #222; text-decoration: none; border-radius: 6px;">
+                        Dashboard
+                    </a>
+
+                    <a asp-controller="Supplier" asp-action="Services"
+                       style="padding: 12px; color: #222; text-decoration: none; border-radius: 6px;">
+                        My Services
+                    </a>
+                </nav>
+            </aside>
+
+            <main role="main" style="flex: 1; min-width: 0; padding: 25px;">
                 @RenderBody()
             </main>
 

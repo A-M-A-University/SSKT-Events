@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Mvc;
 using SSKT_Events.Models;
 
@@ -21,6 +22,11 @@ public class SupplierController : Controller
 
         ViewBag.Supplier = supplier;
 
+        ViewBag.TotalBookings = bookings.Count;
+        ViewBag.PendingBookings = bookings.Count(b => b.Status == BookingStatus.Pending);
+        ViewBag.AcceptedBookings = bookings.Count(b => b.Status == BookingStatus.Accepted);
+        ViewBag.RejectedBookings = bookings.Count(b => b.Status == BookingStatus.Rejected);
+
         return View(bookings);
     }
 
@@ -39,8 +45,6 @@ public class SupplierController : Controller
         if (booking.Status != BookingStatus.Pending)
             return RedirectToAction("Index", new { supplierId });
 
-        // Check if the supplier has an accepted booking
-        // for a DIFFERENT event on the same date.
         var dateTaken = EventsController.events
             .SelectMany(e => e.Bookings)
             .Any(b =>

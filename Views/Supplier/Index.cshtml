@@ -1,3 +1,4 @@
+
 @using SSKT_Events.Models
 @model List<SupplierBooking>
 
@@ -7,22 +8,78 @@
 }
 
 <h2>Supplier Dashboard</h2>
-<a asp-action="Services" asp-route-supplierId="@supplier?.Id" class="btn btn-outline-primary mb-3">My Services</a>
 
 @if (supplier != null)
 {
-    <h4>@supplier.Name</h4>
+    <h4>Welcome, @supplier.Name!</h4>
     <p>Email: @supplier.Email</p>
     <p>Phone: @supplier.Phone</p>
+
+    <a asp-action="Services"
+       asp-route-supplierId="@supplier.Id"
+       class="btn btn-outline-primary mb-3">
+        My Services
+    </a>
 }
+
+<hr />
+
+<h3>Booking Overview</h3>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title">Total Bookings</h6>
+                <h3>@ViewBag.TotalBookings</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title">Pending Bookings</h6>
+                <h3>@ViewBag.PendingBookings</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title">Accepted Bookings</h6>
+                <h3>@ViewBag.AcceptedBookings</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title">Rejected Bookings</h6>
+                <h3>@ViewBag.RejectedBookings</h3>
+            </div>
+        </div>
+    </div>
+</div>
 
 <hr />
 
 <h3>My Bookings</h3>
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["Success"]
+    </div>
+}
+
 @if (TempData["Error"] != null)
 {
-    <p style="color: red;">@TempData["Error"]</p>
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
 }
 
 @if (Model == null || !Model.Any())
@@ -31,44 +88,50 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Service</th>
-                <th>Booking Date</th>
-                <th>Time</th>
-                <th>Price</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var booking in Model)
-            {
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
                 <tr>
-                    <td>@booking.ServiceName</td>
-                    <td>@booking.BookingDate.ToString("MMM dd, yyyy")</td>
-                    <td>@booking.StartTime - @booking.EndTime</td>
-                    <td>₱@booking.Price.ToString("N2")</td>
-                    <td>@booking.Status</td>
-                    <td>
-                        @if (booking.Status == BookingStatus.Pending)
-                        {
-                            <form asp-action="Accept" method="post">
-                                <input type="hidden" name="bookingId" value="@booking.Id" />
-                                <input type="hidden" name="supplierId" value="@supplier?.Id" />
-                                <button type="submit" class="btn btn-success btn-sm">Accept</button>
-                            </form>
-
-                            <form asp-action="Decline" method="post">
-                                <input type="hidden" name="bookingId" value="@booking.Id" />
-                                <input type="hidden" name="supplierId" value="@supplier?.Id" />
-                                <button type="submit" class="btn btn-danger btn-sm">Decline</button>
-                            </form>
-                        }
-                    </td>
+                    <th>Service</th>
+                    <th>Booking Date</th>
+                    <th>Time</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Action</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var booking in Model)
+                {
+                    <tr>
+                        <td>@booking.ServiceName</td>
+                        <td>@booking.BookingDate.ToString("MMM dd, yyyy")</td>
+                        <td>@booking.StartTime - @booking.EndTime</td>
+                        <td>₱@booking.Price.ToString("N2")</td>
+                        <td>@booking.Status</td>
+                        <td>
+                            @if (booking.Status == BookingStatus.Pending)
+                            {
+                                <form asp-action="Accept" method="post" class="d-inline">
+                                    <input type="hidden" name="bookingId" value="@booking.Id" />
+                                    <input type="hidden" name="supplierId" value="@supplier?.Id" />
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        Accept
+                                    </button>
+                                </form>
+
+                                <form asp-action="Decline" method="post" class="d-inline">
+                                    <input type="hidden" name="bookingId" value="@booking.Id" />
+                                    <input type="hidden" name="supplierId" value="@supplier?.Id" />
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        Decline
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }

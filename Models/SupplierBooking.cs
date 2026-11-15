@@ -27,6 +27,9 @@ public class SupplierBooking
     [ForeignKey(nameof(PackageId))]
     public EventPackage? Package { get; set; }
 
+    [ForeignKey(nameof(SupplierId))]
+    public Supplier? Supplier { get; set; }
+
     public bool IsFromPackage => PackageId.HasValue;
 
     public decimal Price { get; set; }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
 namespace SSKT_Events.Models;
 
@@ -12,6 +13,11 @@ public class Customer
     [Required(ErrorMessage = "Enter your full name. - Juan")]
     [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters.")]
     public string Name { get; set; } = "";
+
+    public string UserId { get; set; } = "";
+
+    [ForeignKey(nameof(UserId))]
+    public IdentityUser? User { get; set; }
 
     [Display(Name = "Email Address")]
     [Required(ErrorMessage = "Enter your email address.")]

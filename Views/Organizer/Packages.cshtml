@@ -1,4 +1,3 @@
-
 @model List<SSKT_Events.Models.EventPackage>
 @using SSKT_Events.Models
 
@@ -12,22 +11,12 @@
 <h1>My Packages</h1>
 
 <p>
-    <a asp-action="CreatePackage" asp-route-organizerId="@organizer.Id">
+    <a asp-action="CreatePackage">
         Create Package
     </a>
 </p>
 
 <p>Logged in as: <strong>@organizer.Name</strong></p>
-
-<hr />
-
-<h4>Switch Organizer (Testing Only)</h4>
-
-@foreach (var o in SSKT_Events.Controllers.OrganizerController.organizers)
-{
-    <a asp-action="Packages" asp-route-organizerId="@o.Id">@o.Name</a>
-    <span> | </span>
-}
 
 <hr />
 
@@ -73,7 +62,6 @@ else
                     <td>
                         <form asp-action="TogglePublish" method="post">
                             <input type="hidden" name="packageId" value="@p.Id" />
-                            <input type="hidden" name="organizerId" value="@organizer.Id" />
 
                             <button type="submit">
                                 @(p.IsPublished ? "Unpublish" : "Publish")
@@ -88,4 +76,4 @@ else
 
 <hr />
 
-<a asp-action="Index" asp-route-organizerId="@organizer.Id">Back</a>
+<a asp-action="Index">Back</a>

@@ -1,4 +1,3 @@
-
 @using SSKT_Events.Models
 
 @{
@@ -8,7 +7,6 @@
     var packages = (List<EventPackage>)ViewBag.Packages;
     var services = (List<SupplierService>)ViewBag.Services;
     var suppliers = (List<Supplier>)ViewBag.Suppliers;
-    var allServices = SSKT_Events.Controllers.CatalogController.services;
 }
 
 <h1>Book Services</h1>
@@ -60,9 +58,9 @@ else
                     <td>@p.Name</td>
                     <td>@p.Description</td>
                     <td>
-                        @string.Join(", ", allServices
-                            .Where(s => p.ServiceIds.Contains(s.Id))
-                            .Select(s => s.Name))
+                        @string.Join(", ", p.PackageServices
+                            .Where(ps => ps.Service != null)
+                            .Select(ps => ps.Service!.Name))
                     </td>
                     <td>₱@p.Price.ToString("N2")</td>
                     <td>

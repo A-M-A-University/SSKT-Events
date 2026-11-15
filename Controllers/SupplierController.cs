@@ -1,24 +1,53 @@
-
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SSKT_Events.Data;
 using SSKT_Events.Models;
 
 namespace SSKT_Events.Controllers;
 
+[Authorize(Roles = "Supplier")]
 public class SupplierController : Controller
 {
-    public IActionResult Index(int supplierId = 1)
+    private readonly ApplicationDbContext _context;
+    private readonly UserManager<IdentityUser> _userManager;
+
+    public SupplierController(
+        ApplicationDbContext context,
+        UserManager<IdentityUser> userManager)
     {
-        var supplier = CatalogController.suppliers
-            .FirstOrDefault(s => s.Id == supplierId);
+        _context = context;
+        _userManager = userManager;
+    }
+
+    // Get the logged-in Supplier's profile
+    private async Task<Supplier?> GetCurrentSupplierAsync()
+    {
+        var userId = _userManager.GetUserId(User);
+
+        if (userId == null)
+            return null;
+
+        return await _context.Suppliers
+            .FirstOrDefaultAsync(s => s.UserId == userId);
+    }
+
+    // BOOKINGS
+    public async Task<IActionResult> Index()
+    {
+        var supplier = await GetCurrentSupplierAsync();
 
         if (supplier == null)
             return NotFound();
 
-        var bookings = EventsController.events
-            .SelectMany(e => e.Bookings)
-            .Where(b => b.SupplierId == supplierId)
+        var bookings = await _context.SupplierBookings
+            .Include(b => b.Event)
+            .Include(b => b.Service)
+            .Include(b => b.Package)
+            .Where(b => b.SupplierId == supplier.Id)
             .OrderBy(b => b.BookingDate)
-            .ToList();
+            .ToListAsync();
 
         ViewBag.Supplier = supplier;
 
@@ -30,25 +59,32 @@ public class SupplierController : Controller
         return View(bookings);
     }
 
+    // ACCEPT BOOKING
     [HttpPost]
-    public IActionResult Accept(int bookingId, int supplierId)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Accept(int bookingId)
     {
-        var booking = EventsController.events
-            .SelectMany(e => e.Bookings)
-            .FirstOrDefault(b =>
+        var supplier = await GetCurrentSupplierAsync();
+
+        if (supplier == null)
+            return NotFound();
+
+        var booking = await _context.SupplierBookings
+            .FirstOrDefaultAsync(b =>
                 b.Id == bookingId &&
-                b.SupplierId == supplierId);
+                b.SupplierId == supplier.Id);
 
         if (booking == null)
             return NotFound();
 
         if (booking.Status != BookingStatus.Pending)
-            return RedirectToAction("Index", new { supplierId });
+            return RedirectToAction(nameof(Index));
 
-        var dateTaken = EventsController.events
-            .SelectMany(e => e.Bookings)
-            .Any(b =>
-                b.SupplierId == supplierId &&
+        // Check for an accepted booking on the same date
+        // for a different event.
+        var dateTaken = await _context.SupplierBookings
+            .AnyAsync(b =>
+                b.SupplierId == supplier.Id &&
                 b.EventId != booking.EventId &&
                 b.Id != booking.Id &&
                 b.BookingDate.Date == booking.BookingDate.Date &&
@@ -60,111 +96,140 @@ public class SupplierController : Controller
                 "You already have an accepted booking for a different event on " +
                 booking.BookingDate.ToString("MMM dd, yyyy") + ".";
 
-            return RedirectToAction("Index", new { supplierId });
+            return RedirectToAction(nameof(Index));
         }
 
         booking.Status = BookingStatus.Accepted;
 
+        await _context.SaveChangesAsync();
+
         TempData["Success"] = "Booking successfully accepted.";
 
-        return RedirectToAction("Index", new { supplierId });
+        return RedirectToAction(nameof(Index));
     }
 
+    // DECLINE BOOKING
     [HttpPost]
-    public IActionResult Decline(int bookingId, int supplierId)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Decline(int bookingId)
     {
-        var booking = EventsController.events
-            .SelectMany(e => e.Bookings)
-            .FirstOrDefault(b =>
+        var supplier = await GetCurrentSupplierAsync();
+
+        if (supplier == null)
+            return NotFound();
+
+        var booking = await _context.SupplierBookings
+            .FirstOrDefaultAsync(b =>
                 b.Id == bookingId &&
-                b.SupplierId == supplierId);
+                b.SupplierId == supplier.Id);
 
         if (booking == null)
             return NotFound();
 
         if (booking.Status == BookingStatus.Pending)
+        {
             booking.Status = BookingStatus.Rejected;
+            await _context.SaveChangesAsync();
+        }
 
-        return RedirectToAction("Index", new { supplierId });
+        return RedirectToAction(nameof(Index));
     }
 
-    public IActionResult Services(int supplierId = 1)
+    // VIEW SERVICES
+    public async Task<IActionResult> Services()
     {
-        var supplier = CatalogController.suppliers
-            .FirstOrDefault(s => s.Id == supplierId);
+        var supplier = await GetCurrentSupplierAsync();
 
         if (supplier == null)
             return NotFound();
 
         ViewBag.Supplier = supplier;
 
-        var services = CatalogController.services
-            .Where(s => s.SupplierId == supplierId && s.IsActive)
-            .ToList();
+        var services = await _context.SupplierServices
+            .Where(s =>
+                s.SupplierId == supplier.Id &&
+                s.IsActive)
+            .ToListAsync();
 
         return View(services);
     }
 
-    public IActionResult AddService(int supplierId = 1)
+    // ADD SERVICE
+    [HttpGet]
+    public async Task<IActionResult> AddService()
     {
-        var supplier = CatalogController.suppliers
-            .FirstOrDefault(s => s.Id == supplierId);
+        var supplier = await GetCurrentSupplierAsync();
 
         if (supplier == null)
             return NotFound();
 
-        ViewBag.SupplierId = supplierId;
+        ViewBag.SupplierId = supplier.Id;
 
         return View();
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult AddService(SupplierService service)
+    public async Task<IActionResult> AddService(
+        [Bind("Name,Description,Price")] SupplierService service)
     {
+        var supplier = await GetCurrentSupplierAsync();
+
+        if (supplier == null)
+            return NotFound();
+
         if (!ModelState.IsValid)
         {
-            ViewBag.SupplierId = service.SupplierId;
+            ViewBag.SupplierId = supplier.Id;
             return View(service);
         }
 
-        service.Id = CatalogController.services.Count == 0
-            ? 1
-            : CatalogController.services.Max(s => s.Id) + 1;
-
+        service.SupplierId = supplier.Id;
         service.IsActive = true;
 
-        CatalogController.services.Add(service);
+        _context.SupplierServices.Add(service);
+        await _context.SaveChangesAsync();
 
-        return RedirectToAction(
-            "Services",
-            new { supplierId = service.SupplierId });
+        return RedirectToAction(nameof(Services));
     }
 
-    public IActionResult EditService(int id, int supplierId = 1)
+    // EDIT SERVICE
+    [HttpGet]
+    public async Task<IActionResult> EditService(int id)
     {
-        var service = CatalogController.services
-            .FirstOrDefault(s =>
+        var supplier = await GetCurrentSupplierAsync();
+
+        if (supplier == null)
+            return NotFound();
+
+        var service = await _context.SupplierServices
+            .FirstOrDefaultAsync(s =>
                 s.Id == id &&
-                s.SupplierId == supplierId &&
+                s.SupplierId == supplier.Id &&
                 s.IsActive);
 
         if (service == null)
             return NotFound();
 
-        ViewBag.SupplierId = supplierId;
+        ViewBag.SupplierId = supplier.Id;
 
         return View(service);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult EditService(SupplierService updatedService)
+    public async Task<IActionResult> EditService(
+        [Bind("Id,Name,Description,Price")] SupplierService updatedService)
     {
-        var service = CatalogController.services
-            .FirstOrDefault(s =>
+        var supplier = await GetCurrentSupplierAsync();
+
+        if (supplier == null)
+            return NotFound();
+
+        var service = await _context.SupplierServices
+            .FirstOrDefaultAsync(s =>
                 s.Id == updatedService.Id &&
-                s.SupplierId == updatedService.SupplierId &&
+                s.SupplierId == supplier.Id &&
                 s.IsActive);
 
         if (service == null)
@@ -172,7 +237,7 @@ public class SupplierController : Controller
 
         if (!ModelState.IsValid)
         {
-            ViewBag.SupplierId = updatedService.SupplierId;
+            ViewBag.SupplierId = supplier.Id;
             return View(updatedService);
         }
 
@@ -180,19 +245,25 @@ public class SupplierController : Controller
         service.Description = updatedService.Description;
         service.Price = updatedService.Price;
 
-        return RedirectToAction(
-            "Services",
-            new { supplierId = service.SupplierId });
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Services));
     }
 
+    // DELETE SERVICE (SOFT DELETE)
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult DeleteService(int id, int supplierId)
+    public async Task<IActionResult> DeleteService(int id)
     {
-        var service = CatalogController.services
-            .FirstOrDefault(s =>
+        var supplier = await GetCurrentSupplierAsync();
+
+        if (supplier == null)
+            return NotFound();
+
+        var service = await _context.SupplierServices
+            .FirstOrDefaultAsync(s =>
                 s.Id == id &&
-                s.SupplierId == supplierId &&
+                s.SupplierId == supplier.Id &&
                 s.IsActive);
 
         if (service == null)
@@ -200,8 +271,8 @@ public class SupplierController : Controller
 
         service.IsActive = false;
 
-        return RedirectToAction(
-            "Services",
-            new { supplierId });
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Services));
     }
 }

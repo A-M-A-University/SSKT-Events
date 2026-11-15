@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SSKT_Events.Models;
 
-// A package an event organizer builds from their partner suppliers' services
 public class EventPackage
 {
     [Key]
@@ -32,8 +31,6 @@ public class EventPackage
     [Display(Name = "Publish Package")]
     public bool IsPublished { get; set; }
 
-    // TEMPORARY: our pages still read this list. It breaks 1NF (many values in one
-    // field), so it's replaced by PackageServices when we move to the database.
     [NotMapped]
     public List<int> ServiceIds { get; set; } = new();
 

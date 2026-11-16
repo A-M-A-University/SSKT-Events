@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
 
@@ -5,10 +6,26 @@ namespace SSKT_Events.Models;
 
 public class Supplier
 {
+    [Key]
     public int Id { get; set; }
+
+    [Display(Name = "Supplier Name")]
+    [Required(ErrorMessage = "Enter the supplier's name.  - Juan")]
+    [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters.")]
     public string Name { get; set; } = "";
+
+    [Display(Name = "Email Address")]
+    [Required(ErrorMessage = "Enter the email address.")]
+    [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+    [StringLength(150, ErrorMessage = "Email cannot exceed 150 characters.")]
     public string Email { get; set; } = "";
+
+    [Display(Name = "Phone Number")]
+    [Required(ErrorMessage = "Enter a phone number.")]
+    [Phone(ErrorMessage = "Enter a valid phone number.")]
+    [StringLength(20, ErrorMessage = "Phone number cannot exceed 20 characters.")]
     public string Phone { get; set; } = "";
+
     public string UserId { get; set; } = "";
 
     [ForeignKey(nameof(UserId))]

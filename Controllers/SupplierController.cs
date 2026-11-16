@@ -21,7 +21,7 @@ public class SupplierController : Controller
         _userManager = userManager;
     }
 
-    // Get the logged-in Supplier's profile
+    // Supplier's profile
     private async Task<Supplier?> GetCurrentSupplierAsync()
     {
         var userId = _userManager.GetUserId(User);
@@ -33,8 +33,7 @@ public class SupplierController : Controller
             .FirstOrDefaultAsync(s => s.UserId == userId);
     }
 
-
-    // VIEW PARTNERSHIP REQUESTS
+    // View partnership reqs
     public async Task<IActionResult> Partnerships()
     {
         var supplier = await GetCurrentSupplierAsync();
@@ -52,10 +51,8 @@ public class SupplierController : Controller
         return View(requests);
     }
 
-
-    // ACCEPT PARTNERSHIP REQUEST
+    // Accept partnership
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AcceptPartnership(int id)
     {
         var supplier = await GetCurrentSupplierAsync();
@@ -83,10 +80,8 @@ public class SupplierController : Controller
         return RedirectToAction(nameof(Partnerships));
     }
 
-
-    // REJECT PARTNERSHIP REQUEST
+    // Reject partnership
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> RejectPartnership(int id)
     {
         var supplier = await GetCurrentSupplierAsync();
@@ -114,8 +109,7 @@ public class SupplierController : Controller
         return RedirectToAction(nameof(Partnerships));
     }
 
-
-    // BOOKINGS
+    // Bookings
     public async Task<IActionResult> Index()
     {
         var supplier = await GetCurrentSupplierAsync();
@@ -141,9 +135,8 @@ public class SupplierController : Controller
         return View(bookings);
     }
 
-    // ACCEPT BOOKING
+    // Accept Bookings
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Accept(int bookingId)
     {
         var supplier = await GetCurrentSupplierAsync();
@@ -152,6 +145,7 @@ public class SupplierController : Controller
             return NotFound();
 
         var booking = await _context.SupplierBookings
+            .Include(b => b.Event)
             .FirstOrDefaultAsync(b =>
                 b.Id == bookingId &&
                 b.SupplierId == supplier.Id);
@@ -162,21 +156,44 @@ public class SupplierController : Controller
         if (booking.Status != BookingStatus.Pending)
             return RedirectToAction(nameof(Index));
 
-        // Check for an accepted booking on the same date
-        // for a different event.
-        var dateTaken = await _context.SupplierBookings
-            .AnyAsync(b =>
+        // Can't accept bookings for canceled or non existing events
+        if (booking.Event == null ||
+            booking.Event.Status == EventStatus.Cancelled)
+        {
+            TempData["Error"] = "This event has been cancelled. The booking cannot be accepted.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        
+        // Check overlapping dates
+        DateTime bookingDate = booking.BookingDate.Date;
+        DateTime nextDate = bookingDate.AddDays(1);
+
+        var existingBookings = await _context.SupplierBookings
+            .Where(b =>
                 b.SupplierId == supplier.Id &&
                 b.EventId != booking.EventId &&
                 b.Id != booking.Id &&
-                b.BookingDate.Date == booking.BookingDate.Date &&
-                b.Status == BookingStatus.Accepted);
+                b.BookingDate >= bookingDate &&
+                b.BookingDate < nextDate &&
+                b.Status == BookingStatus.Accepted)
+            .Select(b => new
+            {
+                b.StartTime,
+                b.EndTime
+            })
+            .ToListAsync();
 
-        if (dateTaken)
+        // Check overlapping times in C#
+        bool hasConflict = existingBookings.Any(b =>
+            booking.StartTime < b.EndTime &&
+            booking.EndTime > b.StartTime);
+
+
+        if (hasConflict)
         {
             TempData["Error"] =
-                "You already have an accepted booking for a different event on " +
-                booking.BookingDate.ToString("MMM dd, yyyy") + ".";
+                "You already have an accepted booking that overlaps with this time slot.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -190,9 +207,9 @@ public class SupplierController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // DECLINE BOOKING
+    
+    // Reject booking
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Decline(int bookingId)
     {
         var supplier = await GetCurrentSupplierAsync();
@@ -211,13 +228,16 @@ public class SupplierController : Controller
         if (booking.Status == BookingStatus.Pending)
         {
             booking.Status = BookingStatus.Rejected;
+
             await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Booking successfully declined.";
         }
 
         return RedirectToAction(nameof(Index));
     }
 
-    // VIEW SERVICES
+    // View services
     public async Task<IActionResult> Services()
     {
         var supplier = await GetCurrentSupplierAsync();
@@ -236,7 +256,7 @@ public class SupplierController : Controller
         return View(services);
     }
 
-    // ADD SERVICE
+    // Add service
     [HttpGet]
     public async Task<IActionResult> AddService()
     {
@@ -251,7 +271,6 @@ public class SupplierController : Controller
     }
 
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddService(
         [Bind("Name,Description,Price")] SupplierService service)
     {
@@ -275,7 +294,7 @@ public class SupplierController : Controller
         return RedirectToAction(nameof(Services));
     }
 
-    // EDIT SERVICE
+    // Edit service
     [HttpGet]
     public async Task<IActionResult> EditService(int id)
     {
@@ -299,7 +318,6 @@ public class SupplierController : Controller
     }
 
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditService(
         [Bind("Id,Name,Description,Price")] SupplierService updatedService)
     {
@@ -332,9 +350,8 @@ public class SupplierController : Controller
         return RedirectToAction(nameof(Services));
     }
 
-    // DELETE SERVICE (SOFT DELETE)
+    // Remove service
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteService(int id)
     {
         var supplier = await GetCurrentSupplierAsync();

@@ -1,12 +1,17 @@
 @model SSKT_Events.Models.EventRecord
 
 @{
-    ViewData["Title"] = "Add Payment";
+    ViewData["Title"] = "Pay via PayMongo";
 }
 
-<h1>Add Payment</h1>
+<h1>Pay via PayMongo</h1>
 
-<h4>Payment Information</h4>
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<h4>Payment Summary</h4>
 <hr />
 
 <dl class="row">
@@ -20,7 +25,7 @@
     <dd class="col-sm-9">₱@Model.TotalPaid.ToString("N2")</dd>
 
     <dt class="col-sm-3">Outstanding Balance</dt>
-    <dd class="col-sm-9">₱@Model.OutstandingBalance.ToString("N2")</dd>
+    <dd class="col-sm-9"><strong>₱@Model.OutstandingBalance.ToString("N2")</strong></dd>
 </dl>
 
 <hr />
@@ -28,43 +33,35 @@
 <div class="row">
     <div class="col-md-5">
         <form asp-action="AddPayment" method="post">
-
             <input type="hidden" name="eventId" value="@Model.Id" />
 
             <div class="form-group mb-3">
-                <label for="amount" class="control-label">Amount (₱)</label>
-                <input type="number" name="amount" id="amount"
-                       step="0.01" min="0.01"
-                       max="@Model.OutstandingBalance"
-                       class="form-control" required />
+                <label for="amount" class="control-label">Amount to Pay (₱)</label>
+                <div class="input-group">
+                    <input type="number" name="amount" id="amount"
+                           step="0.01" min="20.00"
+                           max="@Model.OutstandingBalance"
+                           value="@Model.OutstandingBalance.ToString("0.00")"
+                           class="form-control" required />
+                    <button type="button" class="btn btn-outline-secondary"
+                            onclick="document.getElementById('amount').value='@Model.OutstandingBalance.ToString("0.00")'">
+                        Full Balance
+                    </button>
+                </div>
+                <small class="text-muted">Minimum ₱20.00. You will be redirected to PayMongo's secure checkout page.</small>
             </div>
 
             <div class="form-group mb-3">
-                <label for="dueDate" class="control-label">Due Date</label>
-                <input type="date" name="dueDate" id="dueDate"
-                       min="@DateTime.Today.ToString("yyyy-MM-dd")"
-                       class="form-control" required />
-            </div>
-
-            <div class="form-group mb-3">
-                <input type="checkbox" name="isDownPayment"
-                       value="true" id="isDownPayment" />
+                <input type="checkbox" name="isDownPayment" value="true" id="isDownPayment" />
                 <label for="isDownPayment">This is a down payment</label>
             </div>
 
-            <div class="form-group mb-3">
-                <input type="checkbox" name="markPaid"
-                       value="true" id="markPaid" />
-                <label for="markPaid">Mark as paid today</label>
-            </div>
-
             <div class="form-group">
-                <input type="submit" value="Save Payment"
-                       class="btn btn-primary" />
-
-                <a asp-action="Details" asp-route-id="@Model.Id">Cancel</a>
+                <button type="submit" class="btn btn-success">
+                    Pay with PayMongo
+                </button>
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-link">Cancel</a>
             </div>
-
         </form>
     </div>
 </div>

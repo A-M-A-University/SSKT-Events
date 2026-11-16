@@ -1,0 +1,49 @@
+@model SSKT_Events.Models.EventPayment
+
+@{
+    ViewData["Title"] = "PayMongo Test Checkout";
+}
+
+<div class="container mt-4" style="max-width: 520px;">
+    <div class="card shadow-sm border-success">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <strong>PayMongo Checkout</strong>
+            <span class="badge bg-warning text-dark">TEST MODE</span>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-1">Merchant: <strong>SSKT Events</strong></p>
+            <p class="text-muted mb-3">Session ID: <code>@Model.PayMongoCheckoutSessionId</code></p>
+
+            <div class="border rounded p-3 mb-3 bg-light">
+                <div class="d-flex justify-content-between">
+                    <span>@Model.Event?.Name (@(Model.IsDownPayment ? "Down Payment" : "Payment"))</span>
+                    <strong>₱@Model.Amount.ToString("N2")</strong>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Select Payment Method</label>
+                <select class="form-select" id="paymentMethod">
+                    <option value="gcash">GCash (Test Wallet)</option>
+                    <option value="paymaya">Maya (Test Wallet)</option>
+                    <option value="grab_pay">GrabPay (Test Wallet)</option>
+                    <option value="card">Credit / Debit Card (4242 •••• 4242)</option>
+                </select>
+            </div>
+
+            <div class="d-grid gap-2">
+                <a asp-action="PaymentSuccess"
+                   asp-route-paymentId="@Model.Id"
+                   class="btn btn-success btn-lg">
+                    Authorize Test Payment (₱@Model.Amount.ToString("N2"))
+                </a>
+
+                <a asp-action="PaymentCancel"
+                   asp-route-paymentId="@Model.Id"
+                   class="btn btn-outline-danger">
+                    Fail / Cancel Test Payment
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -124,11 +124,13 @@
 
     @if (Model.Status != SSKT_Events.Models.EventStatus.Cancelled)
     {
-        @if (Model.HasConfirmedBookings)
+        @if (Model.HasConfirmedBookings && Model.OutstandingBalance > 0)
         {
-            <a asp-action="AddPayment" asp-route-id="@Model.Id">Add Payment</a>
+            <a asp-action="AddPayment" asp-route-id="@Model.Id" class="btn btn-primary mb-3">
+                Pay via PayMongo
+            </a>
         }
-        else
+        else if (!Model.HasConfirmedBookings)
         {
             <p>Payments open once a supplier accepts a booking.</p>
         }
@@ -139,8 +141,9 @@
         <table class="table">
             <thead>
                 <tr>
+                    <th>Receipt</th>
                     <th>Type</th>
-                    <th>Due Date</th>
+                    <th>Date Paid</th>
                     <th>Amount</th>
                     <th>Status</th>
                 </tr>
@@ -149,20 +152,16 @@
                 @foreach (var p in Model.Payments)
                 {
                     <tr>
+                        <td>@(string.IsNullOrEmpty(p.ReceiptNumber) ? "-" : p.ReceiptNumber)</td>
                         <td>@(p.IsDownPayment ? "Down payment" : "Payment")</td>
-                        <td>@p.DueDate.ToString("MMM dd, yyyy")</td>
+                        <td>@(p.PaidDate?.ToString("MMM dd, yyyy") ?? p.DueDate.ToString("MMM dd, yyyy"))</td>
                         <td>₱@p.Amount.ToString("N2")</td>
-                        <td>@(p.IsPaid ? "Paid" : p.IsOverdue ? "Overdue" : "Unpaid")</td>
+                        <td>@(p.IsPaid ? "Paid" : "Pending")</td>
                     </tr>
                 }
             </tbody>
         </table>
     }
-</div>
-
-<hr />
-
-<div>
     <a asp-action="Index">Back to Events</a>
 
     @if (Model.Status != SSKT_Events.Models.EventStatus.Cancelled)

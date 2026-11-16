@@ -299,6 +299,10 @@ namespace SSKT_Events.Data.Migrations
                     b.Property<DateTime?>("PaidDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PayMongoCheckoutSessionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ReceiptNumber")
                         .IsRequired()
                         .HasMaxLength(50)

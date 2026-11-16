@@ -1,8 +1,13 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SSKT_Events.Data;
+using SSKT_Events.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ... existing builder setup ...
+builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<PayMongoService>();
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");

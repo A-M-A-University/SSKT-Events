@@ -13,7 +13,6 @@ public class EventPayment
     [ForeignKey("EventId")]
     public EventRecord? Event { get; set; }
 
-    // Optional: our payments are per event, not per booking
     public int? BookingId { get; set; }
 
     [ForeignKey("BookingId")]
@@ -21,7 +20,7 @@ public class EventPayment
 
     [Display(Name = "Payment Amount")]
     [Required(ErrorMessage = "Please enter the payment amount.")]
-    [Range(typeof(decimal), "0.01", "999999999", ErrorMessage = "Payment amount must be greater than zero.")]
+    [Range(typeof(decimal), "20.00", "999999999", ErrorMessage = "Minimum PayMongo payment is ₱20.00.")]
     public decimal Amount { get; set; }
 
     [Display(Name = "Down Payment")]
@@ -39,6 +38,9 @@ public class EventPayment
     [Display(Name = "Receipt Number")]
     [StringLength(50, ErrorMessage = "Receipt number cannot exceed 50 characters.")]
     public string ReceiptNumber { get; set; } = "";
+
+    [StringLength(100)]
+    public string? PayMongoCheckoutSessionId { get; set; }
 
     public bool IsPaid => PaidDate.HasValue;
 

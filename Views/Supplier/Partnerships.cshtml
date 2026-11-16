@@ -1,0 +1,99 @@
+@model IEnumerable<SSKT_Events.Models.OrganizerSupplier>
+
+@{
+    ViewData["Title"] = "Partnership Requests";
+}
+
+<div class="container py-4">
+
+    <h2>Partnership Requests</h2>
+
+    <p class="text-muted">
+        Manage partnership requests from event organizers.
+    </p>
+
+    <hr />
+
+    @if (!Model.Any())
+    {
+        <p>No partnership requests yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>Organizer</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var request in Model)
+                    {
+                        <tr>
+                            <td>@request.Organizer?.Name</td>
+                            <td>@request.Organizer?.Email</td>
+                            <td>@request.Organizer?.Phone</td>
+
+                            <td>
+                                @if (request.Status == "Pending")
+                                {
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                }
+                                else if (request.Status == "Accepted")
+                                {
+                                    <span class="badge bg-success">Accepted</span>
+                                }
+                                else if (request.Status == "Rejected")
+                                {
+                                    <span class="badge bg-danger">Rejected</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (request.Status == "Pending")
+                                {
+                                    <div class="d-flex gap-2">
+
+                                        <form asp-action="AcceptPartnership" method="post">
+                                            <input type="hidden"
+                                                   name="id"
+                                                   value="@request.Id" />
+
+                                            <button type="submit"
+                                                    class="btn btn-success btn-sm">
+                                                Accept
+                                            </button>
+                                        </form>
+
+                                        <form asp-action="RejectPartnership" method="post">
+                                            <input type="hidden"
+                                                   name="id"
+                                                   value="@request.Id" />
+
+                                            <button type="submit"
+                                                    class="btn btn-danger btn-sm">
+                                                Reject
+                                            </button>
+                                        </form>
+
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">No action available</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</div>

@@ -426,6 +426,10 @@ namespace SSKT_Events.Data.Migrations
                     b.Property<int>("OrganizerId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("SupplierId")
                         .HasColumnType("INTEGER");
 

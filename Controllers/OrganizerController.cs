@@ -43,9 +43,11 @@ public async Task<IActionResult> Index()
         return NotFound();
 
     var partnerIds = await _context.OrganizerSuppliers
-        .Where(p => p.OrganizerId == organizer.Id)
-        .Select(p => p.SupplierId)
-        .ToListAsync();
+    .Where(p =>
+        p.OrganizerId == organizer.Id &&
+        p.Status == "Accepted")
+    .Select(p => p.SupplierId)
+    .ToListAsync();
 
     var packageIds = await _context.EventPackages
         .Where(p => p.OrganizerId == organizer.Id)
@@ -86,6 +88,78 @@ public async Task<IActionResult> Index()
     return View();
 }
 
+    // VIEW SUPPLIERS
+    public async Task<IActionResult> Suppliers()
+    {
+        var organizer = await GetCurrentOrganizerAsync();
+
+        if (organizer == null)
+            return NotFound();
+
+        var partnerships = await _context.OrganizerSuppliers
+            .Where(p => p.OrganizerId == organizer.Id)
+            .ToListAsync();
+
+        ViewBag.Partnerships = partnerships;
+
+        var suppliers = await _context.Suppliers
+            .ToListAsync();
+
+        return View(suppliers);
+    }
+
+    
+    // SEND PARTNERSHIP REQUEST
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConnectSupplier(int supplierId)
+    {
+        var organizer = await GetCurrentOrganizerAsync();
+
+        if (organizer == null)
+            return NotFound();
+
+        var supplier = await _context.Suppliers
+            .FirstOrDefaultAsync(s => s.Id == supplierId);
+
+        if (supplier == null)
+            return NotFound();
+
+        var partnership = await _context.OrganizerSuppliers
+            .FirstOrDefaultAsync(p =>
+                p.OrganizerId == organizer.Id &&
+                p.SupplierId == supplierId);
+
+        // Do not send another request if Pending or Accepted
+        if (partnership != null &&
+            (partnership.Status == "Pending" ||
+            partnership.Status == "Accepted"))
+        {
+            return RedirectToAction(nameof(Suppliers));
+        }
+
+        // Create a new request if no previous request exists
+        if (partnership == null)
+        {
+            partnership = new OrganizerSupplier
+            {
+                OrganizerId = organizer.Id,
+                SupplierId = supplierId,
+                Status = "Pending"
+            };
+
+            _context.OrganizerSuppliers.Add(partnership);
+        }
+        else
+        {
+            // Allow another request if the previous one was Rejected
+            partnership.Status = "Pending";
+        }
+
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Suppliers));
+    }
 
     // VIEW PACKAGES
     public async Task<IActionResult> Packages()
@@ -97,10 +171,18 @@ public async Task<IActionResult> Index()
 
         ViewBag.Organizer = organizer;
 
-        ViewBag.Services = await _context.SupplierServices
-            .Where(s => s.IsActive)
-            .ToListAsync();
+        var partnerIds = await _context.OrganizerSuppliers
+    .Where(p =>
+        p.OrganizerId == organizer.Id &&
+        p.Status == "Accepted")
+    .Select(p => p.SupplierId)
+    .ToListAsync();
 
+ViewBag.Services = await _context.SupplierServices
+    .Where(s =>
+        s.IsActive &&
+        partnerIds.Contains(s.SupplierId))
+    .ToListAsync();
         var myPackages = await _context.EventPackages
             .Include(p => p.PackageServices)
             .Where(p => p.OrganizerId == organizer.Id)
@@ -152,10 +234,12 @@ public async Task<IActionResult> Index()
             return NotFound();
 
         var partnerIds = await _context.OrganizerSuppliers
-            .Where(p => p.OrganizerId == organizer.Id)
-            .Select(p => p.SupplierId)
-            .ToListAsync();
-
+    .Where(p =>
+        p.OrganizerId == organizer.Id &&
+        p.Status == "Accepted")
+    .Select(p => p.SupplierId)
+    .ToListAsync();
+    
         ViewBag.Organizer = organizer;
 
         ViewBag.Suppliers = await _context.Suppliers
@@ -200,9 +284,11 @@ public async Task<IActionResult> Index()
             return RedirectToAction(nameof(CreatePackage));
         }
 
-        // Get this organizer's partner supplier IDs
+        // Get accepted partner supplier IDs
         var partnerIds = await _context.OrganizerSuppliers
-            .Where(p => p.OrganizerId == organizer.Id)
+            .Where(p =>
+                p.OrganizerId == organizer.Id &&
+                p.Status == "Accepted")
             .Select(p => p.SupplierId)
             .ToListAsync();
 

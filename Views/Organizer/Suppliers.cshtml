@@ -1,0 +1,102 @@
+@model IEnumerable<SSKT_Events.Models.Supplier>
+
+@{
+    ViewData["Title"] = "Suppliers";
+    var partnerships = ViewBag.Partnerships
+        as List<SSKT_Events.Models.OrganizerSupplier>
+        ?? new List<SSKT_Events.Models.OrganizerSupplier>();
+}
+
+<div class="container py-4">
+
+    <h2>Suppliers</h2>
+    <p class="text-muted">
+        View registered suppliers and manage partnership requests.
+    </p>
+
+    <hr />
+
+    @if (!Model.Any())
+    {
+        <p>No suppliers have registered yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>Supplier Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Partnership Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var supplier in Model)
+                    {
+                        var partnership = partnerships
+                            .FirstOrDefault(p => p.SupplierId == supplier.Id);
+
+                        <tr>
+                            <td>@supplier.Name</td>
+                            <td>@supplier.Email</td>
+                            <td>@supplier.Phone</td>
+
+                            <td>
+                                @if (partnership == null)
+                                {
+                                    <span class="badge bg-secondary">No Request</span>
+                                }
+                                else if (partnership.Status == "Pending")
+                                {
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                }
+                                else if (partnership.Status == "Accepted")
+                                {
+                                    <span class="badge bg-success">Accepted</span>
+                                }
+                                else if (partnership.Status == "Rejected")
+                                {
+                                    <span class="badge bg-danger">Rejected</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (partnership == null ||
+                                     partnership.Status == "Rejected")
+                                {
+                                    <form asp-action="ConnectSupplier" method="post">
+                                        <input type="hidden"
+                                               name="supplierId"
+                                               value="@supplier.Id" />
+
+                                        <button type="submit"
+                                                class="btn btn-primary btn-sm">
+                                            Request Partnership
+                                        </button>
+                                    </form>
+                                }
+                                else if (partnership.Status == "Pending")
+                                {
+                                    <button class="btn btn-secondary btn-sm" disabled>
+                                        Request Sent
+                                    </button>
+                                }
+                                else if (partnership.Status == "Accepted")
+                                {
+                                    <button class="btn btn-success btn-sm" disabled>
+                                        Partnered
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</div>

@@ -14,4 +14,6 @@ public class OrganizerSupplier
     public int SupplierId { get; set; }
     [ForeignKey("SupplierId")]
     public Supplier? Supplier { get; set; }
+
+    public string Status { get; set; } = "Pending";
 }

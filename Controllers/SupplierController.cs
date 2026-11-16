@@ -33,6 +33,88 @@ public class SupplierController : Controller
             .FirstOrDefaultAsync(s => s.UserId == userId);
     }
 
+
+    // VIEW PARTNERSHIP REQUESTS
+    public async Task<IActionResult> Partnerships()
+    {
+        var supplier = await GetCurrentSupplierAsync();
+
+        if (supplier == null)
+            return NotFound();
+
+        var requests = await _context.OrganizerSuppliers
+            .Include(p => p.Organizer)
+            .Where(p => p.SupplierId == supplier.Id)
+            .ToListAsync();
+
+        ViewBag.Supplier = supplier;
+
+        return View(requests);
+    }
+
+
+    // ACCEPT PARTNERSHIP REQUEST
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AcceptPartnership(int id)
+    {
+        var supplier = await GetCurrentSupplierAsync();
+
+        if (supplier == null)
+            return NotFound();
+
+        var partnership = await _context.OrganizerSuppliers
+            .FirstOrDefaultAsync(p =>
+                p.Id == id &&
+                p.SupplierId == supplier.Id);
+
+        if (partnership == null)
+            return NotFound();
+
+        if (partnership.Status != "Pending")
+            return RedirectToAction(nameof(Partnerships));
+
+        partnership.Status = "Accepted";
+
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Partnership request accepted.";
+
+        return RedirectToAction(nameof(Partnerships));
+    }
+
+
+    // REJECT PARTNERSHIP REQUEST
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RejectPartnership(int id)
+    {
+        var supplier = await GetCurrentSupplierAsync();
+
+        if (supplier == null)
+            return NotFound();
+
+        var partnership = await _context.OrganizerSuppliers
+            .FirstOrDefaultAsync(p =>
+                p.Id == id &&
+                p.SupplierId == supplier.Id);
+
+        if (partnership == null)
+            return NotFound();
+
+        if (partnership.Status != "Pending")
+            return RedirectToAction(nameof(Partnerships));
+
+        partnership.Status = "Rejected";
+
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Partnership request rejected.";
+
+        return RedirectToAction(nameof(Partnerships));
+    }
+
+
     // BOOKINGS
     public async Task<IActionResult> Index()
     {

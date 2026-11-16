@@ -33,32 +33,59 @@ public class OrganizerController : Controller
             .FirstOrDefaultAsync(o => o.UserId == userId);
     }
 
-    // ORGANIZER DASHBOARD / OVERVIEW
-    public async Task<IActionResult> Index()
-    {
-        var organizer = await GetCurrentOrganizerAsync();
+    
+// ORGANIZER DASHBOARD / OVERVIEW
+public async Task<IActionResult> Index()
+{
+    var organizer = await GetCurrentOrganizerAsync();
 
-        if (organizer == null)
-            return NotFound();
+    if (organizer == null)
+        return NotFound();
 
-        var partnerIds = await _context.OrganizerSuppliers
-            .Where(p => p.OrganizerId == organizer.Id)
-            .Select(p => p.SupplierId)
-            .ToListAsync();
+    var partnerIds = await _context.OrganizerSuppliers
+        .Where(p => p.OrganizerId == organizer.Id)
+        .Select(p => p.SupplierId)
+        .ToListAsync();
 
-        ViewBag.Organizer = organizer;
+    var packageIds = await _context.EventPackages
+        .Where(p => p.OrganizerId == organizer.Id)
+        .Select(p => p.Id)
+        .ToListAsync();
 
-        ViewBag.Suppliers = await _context.Suppliers
-            .Where(s => partnerIds.Contains(s.Id))
-            .ToListAsync();
+    ViewBag.Organizer = organizer;
 
-        ViewBag.Services = await _context.SupplierServices
-            .Where(s => s.IsActive &&
-                        partnerIds.Contains(s.SupplierId))
-            .ToListAsync();
+    // Dashboard statistics
+    ViewBag.TotalPackages = packageIds.Count;
+    ViewBag.TotalSuppliers = partnerIds.Count;
 
-        return View();
-    }
+    ViewBag.TotalServices = await _context.SupplierServices
+        .CountAsync(s =>
+            s.IsActive &&
+            partnerIds.Contains(s.SupplierId));
+
+    ViewBag.TotalEvents = await _context.SupplierBookings
+        .Where(b =>
+            b.PackageId.HasValue &&
+            packageIds.Contains(b.PackageId.Value))
+        .Select(b => b.EventId)
+        .Distinct()
+        .CountAsync();
+
+    // Partner suppliers
+    ViewBag.Suppliers = await _context.Suppliers
+        .Where(s => partnerIds.Contains(s.Id))
+        .ToListAsync();
+
+    // Available services
+    ViewBag.Services = await _context.SupplierServices
+        .Where(s =>
+            s.IsActive &&
+            partnerIds.Contains(s.SupplierId))
+        .ToListAsync();
+
+    return View();
+}
+
 
     // VIEW PACKAGES
     public async Task<IActionResult> Packages()

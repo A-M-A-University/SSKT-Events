@@ -60,6 +60,18 @@
                        style="padding: 12px; color: #222; text-decoration: none; border-radius: 6px;">
                         My Services
                     </a>
+
+                    <form asp-area="Identity"
+                          asp-page="/Account/Logout"
+                          asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })"
+                          method="post"
+                          style="margin-top: auto;">
+
+                        <button type="submit"
+                                style="width: 100%; padding: 12px; text-align: left; color: #dc3545; background: none; border: none; border-radius: 6px;">
+                            Logout
+                        </button>
+                    </form>
                 </nav>
             </aside>
 

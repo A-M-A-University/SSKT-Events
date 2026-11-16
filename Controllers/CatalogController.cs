@@ -21,7 +21,7 @@ public class CatalogController : Controller
         _userManager = userManager;
     }
 
-    // Get the currently logged-in Customer
+    // Customer's profile
     private async Task<Customer?> GetCurrentCustomerAsync()
     {
         var userId = _userManager.GetUserId(User);
@@ -33,7 +33,7 @@ public class CatalogController : Controller
             .FirstOrDefaultAsync(c => c.UserId == userId);
     }
 
-    // Get an event only if it belongs to the current Customer
+    // Get event that are tied to that specific customer acc
     private async Task<EventRecord?> GetCustomerEventAsync(int eventId)
     {
         var customer = await GetCurrentCustomerAsync();
@@ -48,7 +48,7 @@ public class CatalogController : Controller
                 e.CustomerId == customer.Id);
     }
 
-    // CATALOG
+    // Catalog
     public async Task<IActionResult> Index(int eventId)
     {
         var ev = await GetCustomerEventAsync(eventId);
@@ -62,7 +62,6 @@ public class CatalogController : Controller
             .Where(p => p.IsPublished)
             .ToListAsync();
 
-        // Keep ServiceIds available for existing views
         foreach (var package in packages)
         {
             package.ServiceIds = package.PackageServices
@@ -83,7 +82,7 @@ public class CatalogController : Controller
         return View();
     }
 
-    // BOOK INDIVIDUAL SERVICE
+    // Individual services
     [HttpPost]
     public async Task<IActionResult> BookService(int eventId, int serviceId)
     {
@@ -117,7 +116,7 @@ public class CatalogController : Controller
         return RedirectToAction("Details", "Events", new { id = eventId });
     }
 
-    // BOOK PACKAGE
+    // Book package
     [HttpPost]
     public async Task<IActionResult> BookPackage(int eventId, int packageId)
     {
@@ -134,7 +133,7 @@ public class CatalogController : Controller
         if (ev == null || package == null)
             return NotFound();
 
-        // Get the services included in this package
+        // Services included in package
         var serviceIds = package.PackageServices
             .Select(ps => ps.ServiceId)
             .Distinct()
@@ -146,7 +145,7 @@ public class CatalogController : Controller
             .DistinctBy(s => s!.Id)
             .ToList();
 
-        // Make sure all package services are available
+        // Checks if a service inside package is unavailable
         if (included.Count == 0 || included.Count != serviceIds.Count)
         {
             TempData["Error"] =
@@ -154,6 +153,23 @@ public class CatalogController : Controller
 
             return RedirectToAction(nameof(Index), new { eventId });
         }
+
+    // Get organizer's accepted partner suppliers
+    var partnerIds = await _context.OrganizerSuppliers
+        .Where(p =>
+            p.OrganizerId == package.OrganizerId &&
+            p.Status == "Accepted")
+        .Select(p => p.SupplierId)
+        .ToListAsync();
+
+    // Make sure all package suppliers are accepted partners
+    if (included.Any(s => !partnerIds.Contains(s!.SupplierId)))
+    {
+        TempData["Error"] =
+            "One or more suppliers in this package are no longer accepted partners.";
+
+        return RedirectToAction(nameof(Index), new { eventId });
+    }
 
         // Check every service before creating any bookings
         foreach (var service in included)
@@ -181,7 +197,6 @@ public class CatalogController : Controller
 
             if (i == included.Count - 1)
             {
-                // Assign any rounding difference to the last service
                 share = remainingPrice;
             }
             else
@@ -213,14 +228,17 @@ public class CatalogController : Controller
 
         return RedirectToAction("Details", "Events", new { id = eventId });
     }
-
-    // CHECK WHETHER A SERVICE CAN BE BOOKED
+    
+    // Service check booking
     private async Task<string?> CheckBookableAsync(
         EventRecord ev,
         SupplierService service)
     {
         if (ev.Status == EventStatus.Cancelled)
             return "This event is cancelled.";
+
+        if (ev.EventDate.Date < DateTime.Today)
+            return "You cannot book services for past events.";
 
         if (!service.IsActive)
             return service.Name + " is currently unavailable.";
@@ -232,31 +250,45 @@ public class CatalogController : Controller
         var alreadyBooked = ev.Bookings.Any(b =>
             b.ServiceId == service.Id &&
             (b.Status == BookingStatus.Pending ||
-             b.Status == BookingStatus.Accepted));
+            b.Status == BookingStatus.Accepted));
 
         if (alreadyBooked)
             return service.Name +
                 " is already booked for this event.";
 
-        // Check whether the supplier has an accepted booking
-        // for a different event on the same date
-        var supplierTaken = await _context.SupplierBookings
-            .AnyAsync(b =>
+        // Check overlapping accepted bookings
+        DateTime bookingDate = ev.EventDate.Date;
+        DateTime nextDate = bookingDate.AddDays(1);
+
+        var existingBookings = await _context.SupplierBookings
+            .Where(b =>
                 b.SupplierId == service.SupplierId &&
                 b.EventId != ev.Id &&
-                b.BookingDate.Date == ev.EventDate.Date &&
-                b.Status == BookingStatus.Accepted);
+                b.BookingDate >= bookingDate &&
+                b.BookingDate < nextDate &&
+                b.Status == BookingStatus.Accepted)
+            .Select(b => new
+            {
+                b.StartTime,
+                b.EndTime
+            })
+            .ToListAsync();
+
+        // Check overlapping times in C#
+        bool supplierTaken = existingBookings.Any(b =>
+            ev.StartTime < b.EndTime &&
+            ev.EndTime > b.StartTime);
 
         if (supplierTaken)
         {
-            return service.Name + " is not available on " +
-                ev.EventDate.ToString("MMM dd, yyyy") + ".";
+            return service.Name +
+                " is not available during your event schedule.";
         }
 
         return null;
     }
 
-    // CREATE A SUPPLIER BOOKING
+    // Create booking
     private SupplierBooking CreateBooking(
         EventRecord ev,
         SupplierService service,

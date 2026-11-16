@@ -21,7 +21,7 @@ public class OrganizerController : Controller
         _userManager = userManager;
     }
 
-    // Get the currently logged-in Organizer
+    // Organizer's profile
     private async Task<Organizer?> GetCurrentOrganizerAsync()
     {
         var userId = _userManager.GetUserId(User);
@@ -34,61 +34,63 @@ public class OrganizerController : Controller
     }
 
     
-// ORGANIZER DASHBOARD / OVERVIEW
-public async Task<IActionResult> Index()
-{
-    var organizer = await GetCurrentOrganizerAsync();
 
-    if (organizer == null)
-        return NotFound();
+    // Dashboard
+    public async Task<IActionResult> Index()
+    {
+        var organizer = await GetCurrentOrganizerAsync();
 
-    var partnerIds = await _context.OrganizerSuppliers
-    .Where(p =>
-        p.OrganizerId == organizer.Id &&
-        p.Status == "Accepted")
-    .Select(p => p.SupplierId)
-    .ToListAsync();
+        if (organizer == null)
+            return NotFound();
 
-    var packageIds = await _context.EventPackages
-        .Where(p => p.OrganizerId == organizer.Id)
-        .Select(p => p.Id)
-        .ToListAsync();
+        var partnerIds = await _context.OrganizerSuppliers
+            .Where(p =>
+                p.OrganizerId == organizer.Id &&
+                p.Status == "Accepted")
+            .Select(p => p.SupplierId)
+            .ToListAsync();
 
-    ViewBag.Organizer = organizer;
+        var packageIds = await _context.EventPackages
+            .Where(p => p.OrganizerId == organizer.Id)
+            .Select(p => p.Id)
+            .ToListAsync();
 
-    // Dashboard statistics
-    ViewBag.TotalPackages = packageIds.Count;
-    ViewBag.TotalSuppliers = partnerIds.Count;
+        ViewBag.Organizer = organizer;
 
-    ViewBag.TotalServices = await _context.SupplierServices
-        .CountAsync(s =>
-            s.IsActive &&
-            partnerIds.Contains(s.SupplierId));
+        // Statistics
+        ViewBag.TotalPackages = packageIds.Count;
+        ViewBag.TotalSuppliers = partnerIds.Count;
 
-    ViewBag.TotalEvents = await _context.SupplierBookings
-        .Where(b =>
-            b.PackageId.HasValue &&
-            packageIds.Contains(b.PackageId.Value))
-        .Select(b => b.EventId)
-        .Distinct()
-        .CountAsync();
+        ViewBag.TotalServices = await _context.SupplierServices
+            .CountAsync(s =>
+                s.IsActive &&
+                partnerIds.Contains(s.SupplierId));
 
-    // Partner suppliers
-    ViewBag.Suppliers = await _context.Suppliers
-        .Where(s => partnerIds.Contains(s.Id))
-        .ToListAsync();
+        ViewBag.TotalEvents = await _context.SupplierBookings
+            .Where(b =>
+                b.PackageId.HasValue &&
+                packageIds.Contains(b.PackageId.Value) &&
+                partnerIds.Contains(b.SupplierId))
+            .Select(b => b.EventId)
+            .Distinct()
+            .CountAsync();
 
-    // Available services
-    ViewBag.Services = await _context.SupplierServices
-        .Where(s =>
-            s.IsActive &&
-            partnerIds.Contains(s.SupplierId))
-        .ToListAsync();
+        // Partner suppliers
+        ViewBag.Suppliers = await _context.Suppliers
+            .Where(s => partnerIds.Contains(s.Id))
+            .ToListAsync();
 
-    return View();
-}
+        // Available services
+        ViewBag.Services = await _context.SupplierServices
+            .Where(s =>
+                s.IsActive &&
+                partnerIds.Contains(s.SupplierId))
+            .ToListAsync();
 
-    // VIEW SUPPLIERS
+        return View();
+    }
+
+    // Suppliers view
     public async Task<IActionResult> Suppliers()
     {
         var organizer = await GetCurrentOrganizerAsync();
@@ -108,10 +110,8 @@ public async Task<IActionResult> Index()
         return View(suppliers);
     }
 
-    
-    // SEND PARTNERSHIP REQUEST
+    // Request to partner
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ConnectSupplier(int supplierId)
     {
         var organizer = await GetCurrentOrganizerAsync();
@@ -130,7 +130,7 @@ public async Task<IActionResult> Index()
                 p.OrganizerId == organizer.Id &&
                 p.SupplierId == supplierId);
 
-        // Do not send another request if Pending or Accepted
+        // If pending, user can't send a request
         if (partnership != null &&
             (partnership.Status == "Pending" ||
             partnership.Status == "Accepted"))
@@ -138,7 +138,7 @@ public async Task<IActionResult> Index()
             return RedirectToAction(nameof(Suppliers));
         }
 
-        // Create a new request if no previous request exists
+        // Request partnership
         if (partnership == null)
         {
             partnership = new OrganizerSupplier
@@ -152,16 +152,15 @@ public async Task<IActionResult> Index()
         }
         else
         {
-            // Allow another request if the previous one was Rejected
+            // New request if previously rejected
             partnership.Status = "Pending";
         }
 
         await _context.SaveChangesAsync();
-
         return RedirectToAction(nameof(Suppliers));
     }
 
-    // VIEW PACKAGES
+    // Packages
     public async Task<IActionResult> Packages()
     {
         var organizer = await GetCurrentOrganizerAsync();
@@ -188,7 +187,6 @@ ViewBag.Services = await _context.SupplierServices
             .Where(p => p.OrganizerId == organizer.Id)
             .ToListAsync();
 
-        // Populate the temporary ServiceIds property for existing views
         foreach (var package in myPackages)
         {
             package.ServiceIds = package.PackageServices
@@ -199,9 +197,8 @@ ViewBag.Services = await _context.SupplierServices
         return View(myPackages);
     }
 
-    // PUBLISH / UNPUBLISH PACKAGE
+    // Publish or unpublish package
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> TogglePublish(int packageId)
     {
         var organizer = await GetCurrentOrganizerAsync();
@@ -254,9 +251,8 @@ ViewBag.Services = await _context.SupplierServices
         return View();
     }
 
-    // CREATE PACKAGE - POST
+    // Create package
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreatePackage(
         string name,
         string description,
@@ -284,7 +280,7 @@ ViewBag.Services = await _context.SupplierServices
             return RedirectToAction(nameof(CreatePackage));
         }
 
-        // Get accepted partner supplier IDs
+        // Accepted partner ID
         var partnerIds = await _context.OrganizerSuppliers
             .Where(p =>
                 p.OrganizerId == organizer.Id &&
@@ -292,7 +288,7 @@ ViewBag.Services = await _context.SupplierServices
             .Select(p => p.SupplierId)
             .ToListAsync();
 
-        // Only active services from partner suppliers are allowed
+        // Active services from partnered suppliers are allowed
         var selectedServices = await _context.SupplierServices
             .Where(s =>
                 selectedIds.Contains(s.Id) &&
@@ -309,7 +305,6 @@ ViewBag.Services = await _context.SupplierServices
         }
 
         var total = selectedServices.Sum(s => s.Price);
-
         var package = new EventPackage
         {
             OrganizerId = organizer.Id,

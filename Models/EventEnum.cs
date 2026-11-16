@@ -6,7 +6,8 @@ public enum EventStatus
     Upcoming,
     Ongoing,
     Completed,
-    Cancelled
+    Cancelled,
+    Pending
 }
 
 public enum EventType
@@ -14,7 +15,6 @@ public enum EventType
     Birthday,
     Wedding,
     Debut,
-    CorporateEvent,
     Other
 }
 

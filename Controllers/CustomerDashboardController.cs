@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +23,7 @@ namespace SSKT_Events.Controllers
 
         public async Task<IActionResult> Index()
         {
-            // Get the currently logged-in client
+            // Client's profile
             var userId = _userManager.GetUserId(User);
 
             if (userId == null)
@@ -41,7 +40,7 @@ namespace SSKT_Events.Controllers
                 return NotFound("Customer profile not found.");
             }
 
-            // Retrieve events belonging to this customer
+            // Retrieve events tied to specific customer
             var events = await _context.Events
                 .Where(e => e.CustomerId == customer.Id)
                 .OrderByDescending(e => e.CreatedAt)
@@ -53,13 +52,13 @@ namespace SSKT_Events.Controllers
 
             ViewBag.UpcomingEvents = events.Count(e =>
                 e.EventDate.Date >= DateTime.Today &&
-                e.Status.ToString() == "Upcoming");
+                e.Status == EventStatus.Upcoming);
 
             ViewBag.PendingApproval = events.Count(e =>
-                e.Status.ToString() == "Pending");
+                e.Status == EventStatus.Pending);
 
             ViewBag.CompletedEvents = events.Count(e =>
-                e.Status.ToString() == "Completed");
+                e.Status == EventStatus.Completed);
 
             ViewBag.RecentEvents = events
                 .Take(5)

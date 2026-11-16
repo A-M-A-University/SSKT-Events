@@ -1,4 +1,3 @@
-
 @using SSKT_Events.Models
 
 @{
@@ -8,85 +7,98 @@
                        ?? new List<EventRecord>();
 }
 
-<div style="background: #fff; color: #222; min-height: 100vh; padding: 32px;">
+<div class="container py-4">
 
-    <h2 style="font-weight: 600; margin-bottom: 8px;">
-        Customer Dashboard
-    </h2>
+    <!-- Welcome Section -->
+    <div class="mb-4">
+        <h4>Welcome, @(ViewBag.CustomerName ?? "Client")!</h4>
+        <p class="text-muted">
+            Here's an overview of your events.
+        </p>
+    </div>
 
-    <p style="color: #777; margin-bottom: 32px;">
-        Welcome back, @(ViewBag.CustomerName ?? "Client")!
-        Here's an overview of your events.
-    </p>
+    <!-- Dashboard Cards -->
+    <div class="row g-3 mb-4">
 
-    <!-- Event Statistics -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px;">
-
-        <div style="border: 1px solid #e5e5e5; padding: 20px; border-radius: 8px;">
-            <p style="color: #777; margin: 0;">Total Events</p>
-            <h2 style="margin: 8px 0 0;">@(ViewBag.TotalEvents ?? 0)</h2>
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Events</h6>
+                    <h3>@(ViewBag.TotalEvents ?? 0)</h3>
+                </div>
+            </div>
         </div>
 
-        <div style="border: 1px solid #e5e5e5; padding: 20px; border-radius: 8px;">
-            <p style="color: #777; margin: 0;">Upcoming Events</p>
-            <h2 style="margin: 8px 0 0;">@(ViewBag.UpcomingEvents ?? 0)</h2>
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Upcoming Events</h6>
+                    <h3>@(ViewBag.UpcomingEvents ?? 0)</h3>
+                </div>
+            </div>
         </div>
 
-        <div style="border: 1px solid #e5e5e5; padding: 20px; border-radius: 8px;">
-            <p style="color: #777; margin: 0;">Pending Approval</p>
-            <h2 style="margin: 8px 0 0;">@(ViewBag.PendingApproval ?? 0)</h2>
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Pending Approval</h6>
+                    <h3>@(ViewBag.PendingApproval ?? 0)</h3>
+                </div>
+            </div>
         </div>
 
-        <div style="border: 1px solid #e5e5e5; padding: 20px; border-radius: 8px;">
-            <p style="color: #777; margin: 0;">Completed Events</p>
-            <h2 style="margin: 8px 0 0;">@(ViewBag.CompletedEvents ?? 0)</h2>
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Completed Events</h6>
+                    <h3>@(ViewBag.CompletedEvents ?? 0)</h3>
+                </div>
+            </div>
         </div>
 
     </div>
 
     <!-- Recent Events -->
-    <div style="border: 1px solid #e5e5e5; border-radius: 8px; padding: 24px;">
+    <div class="card shadow-sm border-0">
 
-        <h3 style="font-size: 18px; margin-bottom: 20px;">
-            Recent Events
-        </h3>
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">Recent Events</h5>
+        </div>
 
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="card-body">
 
-                <thead>
-                    <tr style="border-bottom: 1px solid #e5e5e5; text-align: left;">
-                        <th style="padding: 12px;">Event Name</th>
-                        <th style="padding: 12px;">Date</th>
-                        <th style="padding: 12px;">Location</th>
-                        <th style="padding: 12px;">Status</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    @if (recentEvents.Any())
-                    {
-                        foreach (var item in recentEvents)
-                        {
-                            <tr style="border-bottom: 1px solid #e5e5e5;">
-                                <td style="padding: 12px;">@item.Name</td>
-                                <td style="padding: 12px;">@item.EventDate.ToString("MMM dd, yyyy")</td>
-                                <td style="padding: 12px;">@item.Location</td>
-                                <td style="padding: 12px;">@item.Status</td>
+            @if (!recentEvents.Any())
+            {
+                <p class="text-muted mb-0">No events to display yet.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Date</th>
+                                <th>Location</th>
+                                <th>Status</th>
                             </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="4" style="padding: 24px; text-align: center; color: #999;">
-                                No events to display yet.
-                            </td>
-                        </tr>
-                    }
-                </tbody>
+                        </thead>
 
-            </table>
+                        <tbody>
+                            @foreach (var item in recentEvents)
+                            {
+                                <tr>
+                                    <td>@item.Name</td>
+                                    <td>@item.EventDate.ToString("MMM dd, yyyy")</td>
+                                    <td>@item.Location</td>
+                                    <td>@item.Status</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
         </div>
     </div>
 

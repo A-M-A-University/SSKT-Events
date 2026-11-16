@@ -101,6 +101,9 @@ public class EventRecord
         if (Status == EventStatus.Cancelled)
             return;
 
+        if (Status == EventStatus.Pending)
+            return;
+
         if (Status == EventStatus.Draft && !HasConfirmedBookings)
             return;
 

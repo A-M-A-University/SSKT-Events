@@ -6,6 +6,7 @@ using SSKT_Events.Data;
 using SSKT_Events.Models;
 using SSKT_Events.Services;
 
+
 namespace SSKT_Events.Controllers;
 
 [Authorize(Roles = "Client")]
@@ -382,7 +383,7 @@ public class EventsController : Controller
         TempData["Error"] = "PayMongo payment was cancelled.";
         return RedirectToAction(nameof(Details), new { id = eventId });
     }
-    
+
     [HttpGet]
     public async Task<IActionResult> MockCheckout(int paymentId, string sessionId)
     {

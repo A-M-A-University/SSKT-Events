@@ -6,7 +6,6 @@ using SSKT_Events.Data;
 using SSKT_Events.Models;
 using SSKT_Events.Services;
 
-
 namespace SSKT_Events.Controllers;
 
 [Authorize(Roles = "Client")]

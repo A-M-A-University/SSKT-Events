@@ -102,6 +102,11 @@ namespace SSKT_Events.Areas.Identity.Pages.Account
                             return LocalRedirect("~/CustomerDashboard");
                         }
 
+                        if (await _userManager.IsInRoleAsync(user, "Organizer"))
+                        {
+                            return LocalRedirect("~/Organizer");
+                        }
+
                         if (await _userManager.IsInRoleAsync(user, "Supplier"))
                         {
                             return LocalRedirect("~/Supplier");

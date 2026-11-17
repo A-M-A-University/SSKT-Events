@@ -210,6 +210,11 @@ namespace SSKT_Events.Areas.Identity.Pages.Account
 
             await _signInManager.SignInAsync(user, isPersistent: false);
 
+            if (Input.Role == "Organizer")
+            {
+                return LocalRedirect("~/Organizer");
+            }
+
             return LocalRedirect(returnUrl);
         }
     }
